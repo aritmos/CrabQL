@@ -12,7 +12,7 @@
         <tspan x="444" y="234" text-anchor="middle" style="paint-order: normal; text-anchor: middle; text-decoration: rgb(0, 0, 0);">RS 🡒 SQL</tspan>
       </text>
       <text id="gh-title-reflection-copy" font-size="24" fill="#4D4E56" style="fill: rgb(77, 78, 86); font-size: 24px; line-height: 20.7px; font-kerning: auto; font-optical-sizing: auto; font-language-override: normal; font-feature-settings: normal; font-variation-settings: normal; paint-order: normal; text-decoration: rgb(0, 0, 0);">
-        <tspan x="444" y="309" text-anchor="middle" style="paint-order: normal; text-anchor: middle; text-decoration: rgb(0, 0, 0);">Create SQL from natural Rust language</tspan>
+        <tspan x="444" y="309" text-anchor="middle" style="paint-order: normal; text-anchor: middle; text-decoration: rgb(0, 0, 0);">Generate SQL from natural Rust code</tspan>
       </text>
     </g>
   </g>
