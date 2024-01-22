@@ -80,61 +80,6 @@ let view1 = schema.table["post_likes"].select(|t| vec![t["post_id"], t["likes"] 
 let view2 = view.select(|v| vec![v["post_id"], v["likes"] + "text"]) // this would fail because you cant add a numeric and a string
 ```
 
-## 📚 Alternative Ideas
-
-### 1. Cursed Comptime `TokenStream`-Parsing Macros
-- Forget everything about having a complete backing type system with implementations that help you write and check the queries in Rust.
-- Simply focus on what the Rust grammar allows, and encode SQL queries into the Rust syntax.
-- Delegate all of the translation into the evaluation of code blocks using a comptime macros that parse the `TokenStream`s.
-
-NOTE: I don't actually know if it is possible to get the `TokenStream` of a block passed in to a function-like proc macro. 
-
-```rust
-let query = rsql!({
-    "employee"
-        .select( |employee_id, last_name, first_name, salary| {
-                // `self` grabs the outer table/view (in this case "`employee`")
-                let ranking = (self.order_by("salary", Desc)).rank();
-                (employee_id, last_name, first_name, salary, ranking)
-        })
-        .order_by("ranking", Asc)
-        .limit(5)
-})
-
-println!("{}", query);
-```
-outputting
-```
-SELECT
-    employee_id,
-    last_name,
-    first_name,
-    salary,
-    RANK() OVER (ORDER BY salary DESC) as ranking
-FROM employee
-ORDER BY ranking
-LIMIT 5
-```
-
-### 2. `SQL++` or `CSQL` (Concise SQL) 
-- If we consider using `TokenStream` macros with deep logic, why not just create our own new language that transpiles into SQL?
-- As a bonus we can make good use of unicode characters--like popular array-based languages do--in order to condense the syntax heavily.
-- The end goal of this would be to simply have a binary that transfers our new language files into SQL files.
-
-```bash
-$ query="[employee⊚[salary>5000]⊏[employee_id,last_name,first_name,salary,☇[⇌[↧,salary]]=ranking]]⇌[ranking]"
-$ sql++ -i $query
-SELECT 
-    employee_id,
-    last_name,
-    first_name,
-    salary,
-    RANK() OVER (ORDER BY salary DESC) as ranking
-FROM employee
-WHERE salary > 50000
-ORDER BY ranking
-$
-```
 
 ## 🤨 Why??
 
