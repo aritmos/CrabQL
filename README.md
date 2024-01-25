@@ -26,17 +26,18 @@ As a first draft I have something like this in mind:
 let query = {
     let monthly_cost = {
         // the schema is used to check for correctness in identifiers and operatations
-        let schema = Schema::from_file("schema.sql").unwrap(); 
+        let schema: CompiledSchema = Schema::from_file("schema.sql").unwrap(); 
         let monthly_cost = schema
-            .table["Marketing"]
+            .table("Marketing")
             .filter(|t| {
+                let created_date = t["created_date"];
                 let time_now = now();
                 time_now - Interval::new(3, TimeUnit::Month) < created_date && created_date < time_now    
             })
-            .order_by[[1, 2]]
-            .group_by[[1, 2]]
+            .order_by([1, 2]) // generic functions that take care of casting
+            .group_by([1, 2]) // 
             .select(|view| {
-                let month = to_char(created_date, "YYYY-MM");
+                let month = to_char(view["created_date"], "YYYY-MM");
                 vec![
                     view["campaign_id"].as("campaign"),
                     month,
@@ -47,8 +48,8 @@ let query = {
     };
 
     monthly_cost
-        .group_by("campaign")
-        .order_by("campaign")
+        .group_by("campaign") // generic functions that take care of casting
+        .order_by("campaign") // 
         .select(|v| {
             vec![v["campaign"], avg(v["monthly_cost"]).as("Avg Monthly Cost")]
         })
