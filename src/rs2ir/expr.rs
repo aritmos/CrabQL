@@ -12,15 +12,7 @@ use super::{
 /// The type's API is constructed such that any incorrect expression building is kept internally
 /// until manually requested. This allows for a cleaner interface when combining expressions.
 pub struct ExprResult {
-    /// A correct inner expression.
-    /// # Safety:
-    /// - If `self.error.is_none()` this expression is guaranteed to be the result of all of the
-    /// operations that have been applied to create this type.
-    ///
-    /// - If `self.error.is_some()` this expression is not guaranteed to be the result defined above.
-    ///
-    /// Basically once the `ExprResult` encounters an error, it can stop updating the `self.expr`
-    /// field.
+    /// A valid inner expression.
     pub(super) expr: Expr,
     // RFC: do we prefer keeping track of multiple errors?
     pub(super) error: Option<ExprErr>,
