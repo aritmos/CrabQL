@@ -34,7 +34,7 @@ impl Checker for DerivedSchema {
         todo!()
     }
 
-    unsafe fn update(&mut self, _expr: Self::Expr) {
+    unsafe fn merge(&mut self, _expr: Self::Expr) {
         todo!()
     }
 }
