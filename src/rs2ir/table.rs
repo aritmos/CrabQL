@@ -1,20 +1,18 @@
 use super::column::Column;
 use std::cell::RefCell;
 
-pub struct Table<'t> {
-    // The name of the table
-    name: &'t str,
+pub struct Table<'c> {
     // Keeps track of created `Column`s (via indexing), so they are properly dropped
-    col_ptrs: RefCell<Vec<*mut Column<'t>>>,
+    col_ptrs: RefCell<Vec<*mut Column<'c>>>,
 }
 
-impl<'t> std::ops::Index<&'t str> for Table<'t> {
-    type Output = Column<'t>;
+impl<'c> std::ops::Index<&'c str> for Table<'c> {
+    type Output = Column<'c>;
 
     /// Returns a `Column` of the given table
     /// # Safety
     /// This operation does not check the validity of the column. That is left to the `Checker`.
-    fn index(&self, col_name: &'t str) -> &Self::Output {
+    fn index(&self, col_name: &'c str) -> &Self::Output {
         let col_ref = Box::leak(Box::new(Column::new(col_name)));
         // Keep track of the "leaked" references
         self.col_ptrs.borrow_mut().push(col_ref as *mut _);
