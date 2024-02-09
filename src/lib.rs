@@ -8,5 +8,5 @@ pub mod ir2sql;
 pub mod sql2ir;
 
 pub mod prelude {
-    pub use crate::rs2ir::{funcs::Functions, value::Comparison};
+    pub use crate::rs2ir::funcs::Functions;
 }

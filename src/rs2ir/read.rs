@@ -1,11 +1,4 @@
-use crate::prelude::*;
-
-use super::{
-    column::Column,
-    expr::Expr,
-    schema::{DerivedSchema, Schema},
-    table::Table,
-};
+use super::{column::Column, expr::ExprResult, schema::Schema, table::Table};
 
 pub type ReaderT<'s, S> = Reader<'s, S, usize, Result<(), String>>;
 
@@ -40,7 +33,7 @@ impl<'s, S, I, T> Reader<'s, S, I, T> {
     pub fn tables<'t, Func, TableIter>(self, _f: Func) -> Self
     where
         // RFC: Change this to be an `Expr<Join>` to refuse bad expressions?
-        Func: FnOnce(I) -> Expr,
+        Func: FnOnce(I) -> ExprResult,
         TableIter: IntoIterator<Item = Table<'t>>,
     {
         todo!()
@@ -66,7 +59,7 @@ impl<'s, S, I, T> Reader<'s, S, I, T> {
     /// Filters the rows in the current table
     pub fn filter<F>(self, _f: F) -> Self
     where
-        F: FnOnce(Table) -> Expr,
+        F: FnOnce(Table) -> ExprResult,
     {
         todo!()
     }
@@ -74,7 +67,8 @@ impl<'s, S, I, T> Reader<'s, S, I, T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::super::{funcs::Functions, schema::DerivedSchema};
+    use super::*; // Required for things to be in scope
 
     #[test]
     fn reader_syntax() {
