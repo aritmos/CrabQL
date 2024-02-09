@@ -42,3 +42,11 @@ impl<'c> Comparison for Column<'c> {
         todo!()
     }
 }
+
+impl<'c> Functions for Column<'c> {
+    type Expr = expr::Expr;
+
+    fn len(self) -> Self::Expr {
+        todo!()
+    }
+}
