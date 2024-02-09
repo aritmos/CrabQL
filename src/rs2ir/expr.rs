@@ -1,7 +1,12 @@
 #![allow(unused)]
 use std::ops::{BitAnd, BitOr};
 
-use super::{column::Column, funcs::Functions, value, value::Value};
+use super::{
+    column::Column,
+    funcs::{Func, Functions},
+    value,
+    value::Value,
+};
 
 /// A possibly incorrect expression.
 /// The type's API is constructed such that any incorrect expression building is kept internally
@@ -61,13 +66,6 @@ pub enum BoolOp {
 pub struct FuncExpr {
     pub(super) func: Func,
     pub(super) args: Vec<Expr>,
-}
-
-/// Functions that can be applied to expressions
-pub enum Func {
-    Len,
-    Count,
-    And,
 }
 
 pub enum BaseExpr {

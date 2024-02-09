@@ -1,7 +1,14 @@
 use super::{
-    expr::{BaseExpr, BoolExpr, BoolOp::*, Expr, ExprErr, ExprResult, Func, FuncExpr},
+    expr::{BaseExpr, BoolExpr, BoolOp::*, Expr, ExprErr, ExprResult, FuncExpr},
     value::Value,
 };
+
+/// Functions that can be applied to expressions
+pub enum Func {
+    Len,
+    Count,
+    And,
+}
 
 // each of the methods here needs to have a 1-1 relation with an `Expr` subtype (not ideal)
 //
