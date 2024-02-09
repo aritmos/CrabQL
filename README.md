@@ -47,7 +47,7 @@ let query = {
             .order_by([1, 2]) // generic functions that take care of casting
             .group_by([1, 2]) // 
             .select(|view| {
-                let month = to_char(view["created_date"], "YYYY-MM");
+                let month = view["created_date"].to_char("YYYY-MM");
                 [
                     view["campaign_id"].as("campaign"),
                     month,
