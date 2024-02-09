@@ -1,14 +1,10 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+/// Rust to Intermediate Representation
+pub mod rs2ir;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Intermediate Representation to Rust
+pub mod ir2sql;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+/// SQL to Intermediate Representation
+pub mod sql2ir;
+
 }
