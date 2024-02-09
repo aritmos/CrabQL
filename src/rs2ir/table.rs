@@ -26,7 +26,7 @@ impl<'t> std::ops::Drop for Table<'t> {
         // Safety:
         // - The pointers are valid as they were created by `Box::leak`.
         // - The values have not already been dropped, as there is no other way to do so.
-        // - No other pointers exist that point to the same locations, as they can't be made.
+        // - No duplicate pointers exist, as they can't be made.
         // - No double drop due to how the pointers are created.
         self.col_ptrs
             .borrow()
