@@ -50,3 +50,13 @@ impl<'c> Functions for Column<'c> {
         todo!()
     }
 }
+
+impl<'c> IntoIterator for Column<'c> {
+    type Item = Column<'c>;
+
+    type IntoIter = std::iter::Once<Self>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        std::iter::once(self)
+    }
+}
