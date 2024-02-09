@@ -22,3 +22,19 @@ impl From<usize> for Value {
         Value::UInt(value)
     }
 }
+
+pub trait Comparison {
+    type Expr;
+
+    fn eq(&self, val: impl Into<Value>) -> Self::Expr;
+
+    fn ne(&self, val: impl Into<Value>) -> Self::Expr;
+
+    fn gt(&self, val: impl Into<Value>) -> Self::Expr;
+
+    fn ge(&self, val: impl Into<Value>) -> Self::Expr;
+
+    fn lt(&self, val: impl Into<Value>) -> Self::Expr;
+
+    fn le(&self, val: impl Into<Value>) -> Self::Expr;
+}
