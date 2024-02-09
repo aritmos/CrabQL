@@ -3,7 +3,7 @@ use std::ops::{BitAnd, BitOr};
 
 use super::{
     column::Column,
-    funcs::{Func, Functions},
+    funcs::{Functions, Mappings},
     value,
     value::Value,
 };
@@ -56,7 +56,7 @@ pub enum BoolOp {
 }
 
 pub struct FuncExpr {
-    pub(super) func: Func,
+    pub(super) func: Functions,
     pub(super) args: Vec<Expr>,
 }
 
@@ -99,4 +99,4 @@ impl BitOr for ExprResult {
     }
 }
 
-impl Functions for ExprResult {}
+impl Mappings for ExprResult {}

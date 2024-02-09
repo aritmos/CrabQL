@@ -67,7 +67,7 @@ impl<'s, S, I, T> Reader<'s, S, I, T> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{funcs::Functions, schema::DerivedSchema};
+    use super::super::{funcs::Mappings, schema::DerivedSchema};
     use super::*; // Required for things to be in scope
 
     #[test]

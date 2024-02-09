@@ -4,7 +4,7 @@ use super::{
 };
 
 /// Functions that can be applied to expressions
-pub enum Func {
+pub enum Functions {
     Len,
     Count,
     And,
@@ -14,7 +14,7 @@ pub enum Func {
 //
 // the `len()` method does not measure the length of the collection
 #[allow(clippy::len_without_is_empty)]
-pub trait Functions: Into<ExprResult> {
+pub trait Mappings: Into<ExprResult> {
     /// Returns the length of the expression
     fn len(self) -> ExprResult {
         let expr_res: ExprResult = self.into();
@@ -35,7 +35,7 @@ pub trait Functions: Into<ExprResult> {
         }
 
         let expr = Expr::Func(FuncExpr {
-            func: Func::Len,
+            func: Functions::Len,
             args: vec![expr_res.expr],
         });
 
@@ -58,7 +58,7 @@ pub trait Functions: Into<ExprResult> {
         }
 
         expr_res.expr = Expr::Func(FuncExpr {
-            func: Func::Count,
+            func: Functions::Count,
             args: vec![expr_res.expr],
         });
 

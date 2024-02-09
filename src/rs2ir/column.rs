@@ -1,4 +1,4 @@
-use super::funcs::Functions;
+use super::funcs::Mappings;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Column<'c> {
@@ -11,7 +11,7 @@ impl<'c> Column<'c> {
     }
 }
 
-impl<'c> Functions for Column<'c> {}
+impl<'c> Mappings for Column<'c> {}
 
 impl<'c> IntoIterator for Column<'c> {
     type Item = Column<'c>;
