@@ -1,4 +1,4 @@
-use super::value;
+use super::{funcs::Functions, value};
 
 #[derive(Default)]
 pub struct Expr;
@@ -63,6 +63,14 @@ impl value::Comparison for Expr {
     }
 
     fn le(&self, _val: impl Into<value::Value>) -> Self::Expr {
+        todo!()
+    }
+}
+
+impl Functions for Expr {
+    type Expr = Self;
+    /// Applies the `LEN()` function on an expression's value
+    fn len(self) -> Self::Expr {
         todo!()
     }
 }
