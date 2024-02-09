@@ -10,13 +10,18 @@
 
 ## 🚧 CAUTION
 
-- This project is in such early stages that it doesn't even qualify to be a member of reality.
-- It's always great to work with source control, and I might as well make it public for people to gander if they so please.
-- In the case that the project takes off, I will likely end up publishing it on [`crates.io`](https://crates.io/).
+- This project is still in very very early stages of production, I am still figuring out how to
+best design the core functionality of the project.
+- Take a look at the [`wiki`](https://github.com/aritmos/rs2sql/wiki) some examples of the potential
+uses of `rs2sql`.
+- Upon further development, eventually I plan to publish the crate to [crates.io](https://crates.io).
 
 ## ✨ Focus and Goals
 
-`rs->sql`(or `rs2sql`) is an ambitious project to "rustify the SQL language", stemming from a thought of how database querying would have been implemented by the Rust team. This project by no means attempts to be a complete reimagining of the SQL language; it simply tries to port the SQL syntax into a natural and friendly functional Rust code.
+`rs->sql`(or `rs2sql`) is an ambitious project to "rustify the SQL language", stemming from a
+thought of how database querying would have been implemented by the "Rust team". 
+This project by no means attempts to be a complete reimagining of the SQL language;
+it simply tries to port the SQL syntax into a natural and friendly functional Rust code.
 
 The core of the library is a query builder that can output `String`s of SQL.
 As an experimental draft I have something like this in mind:
@@ -29,18 +34,24 @@ let query = {
         let monthly_cost = schema
             .table("Marketing")
             .filter(|t| {
-                let created_date = t["created_date"];
+                // filter creation dates to between 1-2 months ago
                 let time_now = now();
-                (time_now - Interval::new(3, TimeUnit::Month)).lt(created_date) & created_date.lt(time_now)    
+                let one_month_ago = time_now - Interval::new(1, TimeUnit::Month);
+                let two_months_ago = time_now - Interval::new(2, TimeUnit::Month);
+                let created_date = t["created_date"];
+
+                // `&` and `|` are used for logical `AND` and `OR` operations on expressions.
+                // for those who prefer it there is also `.and()` and `.or()` methods.
+                two_months_ago.lt(created_date) & created_date.lt(one_month_ago)
             })
             .order_by([1, 2]) // generic functions that take care of casting
             .group_by([1, 2]) // 
             .select(|view| {
                 let month = to_char(view["created_date"], "YYYY-MM");
-                vec![
+                [
                     view["campaign_id"].as("campaign"),
                     month,
-                    sum(view["cost"]).as("monthly_cost")
+                    view["cost"].sum().as("monthly_cost")
                 ]
             })
             .as("Cost_By_Month")
@@ -50,14 +61,15 @@ let query = {
         .group_by("campaign") // generic functions that take care of casting
         .order_by("campaign") // 
         .select(|v| {
-            vec![v["campaign"], avg(v["monthly_cost"]).as("Avg Monthly Cost")]
+            [v["campaign"], avg(v["monthly_cost"]).as("Avg Monthly Cost")]
         })
         .to_sql()
 });
 
 println!("{}", query);
 ```
-outputting
+outputs
+
 ```sql
 SELECT campaign, avg(monthly_cost) as "Avg Monthly Cost"
 FROM
@@ -65,7 +77,7 @@ FROM
        TO_CHAR(created_date, 'YYYY-MM') AS month,
        SUM(cost) AS monthly_cost
     FROM marketing
-    WHERE created_date BETWEEN NOW() - INTERVAL '3 MONTH' AND NOW()
+    WHERE created_date BETWEEN NOW() - INTERVAL '2 MONTH' AND NOW() - INTERVAL '1 MONTH'
     GROUP BY 1, 2
     ORDER BY 1, 2) as Cost_By_Month
 GROUP BY campaign
@@ -128,8 +140,8 @@ A `DerivedSchema` starts as a blank slate, and doesn't require any information a
 ```rust
 let schema = Schema::derive(); // schema is built along with the operations that use it
 // all of the following accesses are added into the schema. any clashes would result in an error
-let view1 = schema.table["post_likes"].select(|t| vec![t["post_id"], t["likes"] + 1]) // `likes` is now enforced to be numeric
-let view2 = view.select(|v| vec![v["post_id"], v["likes"] + "text"]) // this would fail because you cant add a numeric and a string
+let view1 = schema.table["post_likes"].select(|t| [t["post_id"], t["likes"] + 1]) // `likes` is now enforced to be numeric
+let view2 = view.select(|v| [v["post_id"], v["likes"] + "text"]) // this would fail because you cant add a numeric and a string
 ```
 
 #### Ordering Safety
