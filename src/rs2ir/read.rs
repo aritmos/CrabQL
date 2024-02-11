@@ -1,58 +1,49 @@
-use super::{column::Column, expr::ExprResult, schema::Schema, table::Table};
+use super::{checker::Checker, column::Column, expr::ExprResult, table::Table};
 
-pub type ReaderT<'s, S> = Reader<'s, S, usize, Result<(), String>>;
-
-pub struct Reader<'s, S, I, T> {
-    pub schema: &'s mut S, // impl Schema
-    pub internals: I,
-    pub state: T, // Include context (?)
+// TODO: Remove Q and T generics once their types are settled
+pub struct Reader<'c, C, Q, T> {
+    pub(super) checker: &'c mut C,
+    pub(super) state: T,
+    pub(super) query: Q,
 }
 
-pub struct SealedReader<I> {
-    _internals: I,
+pub struct SealedReader<T> {
+    state: T,
 }
 
-impl<'s, S, I, T> Reader<'s, S, I, T> {
-    pub fn new(schema: &'s mut S, internals: I, state: T) -> Self
+impl<'c, C, Q, T> Reader<'c, C, Q, T> {
+    pub fn new(checker: &'c mut C) -> Self
     where
-        S: Schema,
+        C: Checker,
+        Q: Default,
+        T: Default,
     {
         Reader {
-            internals,
-            schema,
-            state,
+            checker,
+            state: T::default(),
+            query: Q::default(),
         }
     }
 
-    /// Adds a table into its context
+    /// Adds a table into its state
     pub fn table(self, _id: &str) -> Self {
-        todo!()
-    }
-
-    /// Adds a group of joined tables into its context
-    pub fn tables<'t, Func, TableIter>(self, _f: Func) -> Self
-    where
-        // RFC: Change this to be an `Expr<Join>` to refuse bad expressions?
-        Func: FnOnce(I) -> ExprResult,
-        TableIter: IntoIterator<Item = Table<'t>>,
-    {
         todo!()
     }
 
     /// Selects the given rows for reading, returns a `SealedReader` that cannot be internally
     /// modified further.
-    pub fn select<'t, 'c, Func, ColIter>(self, _f: Func) -> Result<SealedReader<I>, String>
+    pub fn select<'t, 'col, Func, ColIter>(self, _f: Func) -> Result<SealedReader<T>, String>
     where
         Func: FnOnce(Table<'t>) -> ColIter,
-        ColIter: IntoIterator<Item = Column<'c>>,
-        't: 'c,
+        ColIter: IntoIterator<Item = Column<'col>>,
+        't: 'col,
     {
         todo!()
     }
 
     /// Selects all rows for reading, returns a `SealedReader` that cannot be internally modified
     /// further.
-    pub fn select_all(self) -> Result<SealedReader<I>, String> {
+    pub fn select_all(self) -> Result<SealedReader<T>, String> {
         todo!()
     }
 
@@ -67,14 +58,13 @@ impl<'s, S, I, T> Reader<'s, S, I, T> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{funcs::Mappings, schema::DerivedSchema};
+    use super::super::{checker::DerivedChecker, funcs::Mappings};
     use super::*; // Required for things to be in scope
 
     #[test]
     fn reader_syntax() {
-        let mut schema = DerivedSchema::new();
-        let reader = schema.read();
-        let _x = reader
+        let mut checker = DerivedChecker::new();
+        let _x = Reader::<'_, _, usize, usize>::new(&mut checker)
             .table("emp")
             .filter(|t| t["id"].gt(3_usize) & t["name"].len().gt(10_usize))
             .select(|t| [t["id"], t["name"]]);
