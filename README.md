@@ -28,45 +28,26 @@ As an experimental draft I have something like this in mind:
 
 ```rust
 let query = {
-    // The checker uses the given schema to verify expressions are correct.
-    // It is also possible to create a checker without a schema that only ensures every operation
-    // is self-consistent.
     let checker: ExprChecker::from_schema("schema.sql").unwrap();
-
-    // All queries are either created via a `Reader` or a `Writer`.
-    // `Reader`s are not allowed to make operations that modify the database's state.
-    // (Although they can be turned into `Writer`s if one wants to save a query as a view for example)
     let reader: Reader = Reader::new(&mut checker);
 
-    let monthly_cost: SQLQuery = { // ↓ A `Reader` gets mutated via a chain of methods that consume and return a `Reader`.
+    let monthly_cost: SQLQuery = {
         let monthly_cost: SealedReader = reader
             .table("marketing")
-            .new_col("category", |t| { // <- Unlike traditional SQL, we can create new columns before needing to finish a SELECT query, 
-                case!{                 // leaving it up to the library to generate any subqueries or CTEs when required.
+            .new_col("category", |t| { 
+                case!{                
                     t["created_date"].lt(Date::new("2020-04-01")) => "pre-pandemic",
                     t["created_date"].lt(Date::new("2024-01-01")) => "last year",
                     _ => "recent",
                 } 
-            }) // ↓ Select columns by indexing into tables. Use `&` and `|` as logical AND and OR.
+            }) 
             .filter(|t| t["category"].neq("old") & t["completed"].eq(true))
             .select_as("cost_by_month", |t| {
-                let month = view["created_date"].to_char("YYYY-MM"); // ↓ Any "column iterator" can be used in selections 
+                let month = view["created_date"].to_char("YYYY-MM"); 
                 [ t["campaign_id"].as("campaign"), month, t["cost"].sum().as("monthly_cost") ]
             }).unwrap(); 
-            // ↑ Calling `select`-like methods turns the `Reader` into a `SealedReader`.
-            // A `SealedReader` is no longer dependant on the checker and is "immutable".
-            // The checker can then be used for other queries which can depend on previous queries 
-            // such as this one.
-            //
-            // The operation fails if there are any errors in the `Reader`'s state, either stemming
-            // from a misuse of operations (e.g. `WHERE 3 > NULL`) or disallowed by a checker's
-            // schema: `SELECT col1` (col1 doesn't exist), `WHERE col > 3` (col is non-numeric).
-            // One can check the `Reader`'s state before attempting to seal it by using the `.check()`
-            // method. The `Reader` immediatelly knows when its state is erroneous, but doesn't communicate
-            // this until explicitly or implicitly prompted for better global ergonomics.
 
         
-        // We can unseal a completed query to continue modifying it
         monthly_cost
             .unseal(&mut checker)
             .group_by("campaign") 
