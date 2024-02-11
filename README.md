@@ -35,7 +35,7 @@ let query = {
             }) 
             .filter(|t| t["category"].neq("old") & t["completed"].eq(true))
             .select_as("cost_by_month", |t| {
-                let month = view["created_date"].to_char("YYYY-MM"); 
+                let month = t["created_date"].to_char("YYYY-MM"); 
                 [ t["campaign_id"].as("campaign"), month, t["cost"].sum().as("monthly_cost") ]
             }).unwrap(); 
 
