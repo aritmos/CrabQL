@@ -28,42 +28,55 @@ As an experimental draft I have something like this in mind:
 
 ```rust
 let query = {
-    let monthly_cost = {
-        // the schema is used to check for correctness in identifiers and operatations
-        let schema: CompiledSchema = Schema::from_file("schema.sql").unwrap(); 
-        let monthly_cost = schema
-            .table("Marketing")
-            .filter(|t| {
-                // filter creation dates to between 1-2 months ago
-                let time_now = now();
-                let one_month_ago = time_now - Interval::new(1, TimeUnit::Month);
-                let two_months_ago = time_now - Interval::new(2, TimeUnit::Month);
-                let created_date = t["created_date"];
+    // The checker uses the given schema to verify expressions are correct.
+    // It is also possible to create a checker without a schema that only ensures every operation
+    // is self-consistent.
+    let checker: ExprChecker::from_schema("schema.sql").unwrap();
 
-                // `&` and `|` are used for logical `AND` and `OR` operations on expressions.
-                // for those who prefer it there is also `.and()` and `.or()` methods.
-                two_months_ago.lt(created_date) & created_date.lt(one_month_ago)
-            })
-            .order_by([1, 2]) // generic functions that take care of casting
-            .group_by([1, 2]) // 
-            .select(|view| {
-                let month = view["created_date"].to_char("YYYY-MM");
-                [
-                    view["campaign_id"].as("campaign"),
-                    month,
-                    view["cost"].sum().as("monthly_cost")
-                ]
-            })
-            .as("Cost_By_Month")
-    };
+    // All queries are either created via a `Reader` or a `Writer`.
+    // `Reader`s are not allowed to make operations that modify the database's state.
+    // (Although they can be turned into `Writer`s if one wants to save a query as a view for example)
+    let reader: Reader = Reader::new(&mut checker);
 
-    monthly_cost
-        .group_by("campaign") // generic functions that take care of casting
-        .order_by("campaign") // 
-        .select(|v| {
-            [v["campaign"], avg(v["monthly_cost"]).as("Avg Monthly Cost")]
-        })
-        .to_sql()
+    let monthly_cost: SQLQuery = { // ↓ A `Reader` gets mutated via a chain of methods that consume and return a `Reader`.
+        let monthly_cost: SealedReader = reader
+            .table("marketing")
+            .new_col("category", |t| { // <- Unlike traditional SQL, we can create new columns before needing to finish a SELECT query, 
+                case!{                 // leaving it up to the library to generate any subqueries or CTEs when required.
+                    t["created_date"].lt(Date::new("2020-04-01")) => "pre-pandemic",
+                    t["created_date"].lt(Date::new("2024-01-01")) => "last year",
+                    _ => "recent",
+                } 
+            }) // ↓ Select columns by indexing into tables. Use `&` and `|` as logical AND and OR.
+            .filter(|t| t["category"].neq("old") & t["completed"].eq(true))
+            .select_as("cost_by_month", |t| {
+                let month = view["created_date"].to_char("YYYY-MM"); // ↓ Any "column iterator" can be used in selections 
+                [ t["campaign_id"].as("campaign"), month, t["cost"].sum().as("monthly_cost") ]
+            }).unwrap(); 
+            // ↑ Calling `select`-like methods turns the `Reader` into a `SealedReader`.
+            // A `SealedReader` is no longer dependant on the checker and is "immutable".
+            // The checker can then be used for other queries which can depend on previous queries 
+            // such as this one.
+            //
+            // The operation fails if there are any errors in the `Reader`'s state, either stemming
+            // from a misuse of operations (e.g. `WHERE 3 > NULL`) or disallowed by a checker's
+            // schema: `SELECT col1` (col1 doesn't exist), `WHERE col > 3` (col is non-numeric).
+            // One can check the `Reader`'s state before attempting to seal it by using the `.check()`
+            // method. The `Reader` immediatelly knows when its state is erroneous, but doesn't communicate
+            // this until explicitly or implicitly prompted for better global ergonomics.
+
+        
+        // We can unseal a completed query to continue modifying it
+        monthly_cost
+            .unseal(&mut checker)
+            .group_by("campaign") 
+            .order_by("campaign")
+            .select(|v| {
+                [v["campaign"], v["monthly_cost"].avg().as("avg cost")]
+            })
+            .unwrap()
+            .to_sql()
+    }
 });
 
 println!("{}", query);
@@ -71,15 +84,24 @@ println!("{}", query);
 outputs
 
 ```sql
-SELECT campaign, avg(monthly_cost) as "Avg Monthly Cost"
-FROM
-    (SELECT campaign_id AS campaign,
-       TO_CHAR(created_date, 'YYYY-MM') AS month,
-       SUM(cost) AS monthly_cost
-    FROM marketing
-    WHERE created_date BETWEEN NOW() - INTERVAL '2 MONTH' AND NOW() - INTERVAL '1 MONTH'
-    GROUP BY 1, 2
-    ORDER BY 1, 2) as Cost_By_Month
+WITH cost_by_month AS (
+    SELECT
+        campaign_id                      AS campaign,
+        TO_CHAR(created_date, 'YYYY-MM') AS created_date,
+        SUM(cost)                        AS total_cost
+    FROM (
+        SELECT *,
+            CASE
+                WHEN created_date < DATE '2020-04-01' THEN 'pre-pandemic'
+                WHEN created_date < DATE '2024-01-01' THEN 'last year'
+                ELSE 'recent' END AS category
+        FROM marketing
+    ) x
+    WHERE category != 'pre-pandemic' AND completed = TRUE
+)
+
+SELECT campaign, AVG(total_cost) AS 'avg cost'
+FROM cost_by_month
 GROUP BY campaign
 ORDER BY campaign
 ```
@@ -115,7 +137,7 @@ WHERE (salary > 100_000 OR department = 'Engineering')
 ... at that point you might as well write the entire query into a string. Users can alternatively break up the filter into subqueries, which can work as long as the logic is decoupled but does fragment the flow of the query's creation. On the other hand with `rs2sql` we can write the whole thing within a single block, making use of variables, comments, and logic-segmentation as we please:
 
 ```rust
-schema.read().table("employees").filter(|t| {
+reader.table("employees").filter(|t| {
     let high_salary = 100_000;
     let high_salary_engineers = t["salary"].gt(high_salary) & t["department"].eq("Engineering"); 
     let active_and_young = t["age"].between(25, 35) & t["status"].eq("Active");
@@ -138,10 +160,20 @@ The other core safety-related feature, is that `rs2sql` **guarantees query corre
 A `DerivedSchema` starts as a blank slate, and doesn't require any information about the database. As queries are created using this object, it keeps track of the accesses that are made, the operations on columns, etc. The `DerivedSchema` guarantees that any queries are simply self-consistent (this is also done implicitly with a `CompiledSchema`). So if one query uses `employees.id` as a string, another can't be using it as an integer.
 
 ```rust
-let schema = Schema::derive(); // schema is built along with the operations that use it
+let mut checker = DerivedChecker::new(); // schema is built along with the operations that use it
 // all of the following accesses are added into the schema. any clashes would result in an error
-let view1 = schema.table["post_likes"].select(|t| [t["post_id"], t["likes"] + 1]) // `likes` is now enforced to be numeric
-let view2 = view.select(|v| [v["post_id"], v["likes"] + "text"]) // this would fail because you cant add a numeric and a string
+
+// The checker infers that the _likes_ column is numeric.
+let view1 = Reader::new(&mut checker)
+    .table("post_likes")
+    .select(|t| [t["post_id"], t["likes"] + 1]) 
+    .unwrap();
+
+// Checker throws an error because _likes_ column is numeric but string concatenation requires a string.
+// The error is stored in the reader's state, which will fail to seal.
+let view2 = Reader::new(&mut checker)
+    .table("post_likes")
+    .select(|v| [v["post_id"], v["likes"] + "text"]) 
 ```
 
 #### Ordering Safety
