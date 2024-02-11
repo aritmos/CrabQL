@@ -1,13 +1,5 @@
 <img width="100%" src="./assets/banner.svg">
 
-<div align="right">
-  <a href="https://notbyai.fyi/">
-  <img src="./assets/not-by-ai.png">
-  </a>
-</div>
-
----
-
 ## 🚧 CAUTION
 
 - This project is still in very very early stages of production, I am still figuring out how to
@@ -188,3 +180,10 @@ All of this talk about types, and state checking, manipulation and safety seems 
 I assume that the large majority of projects that manipulate databases through an application boundary keep their queries nice and small. In many cases it might simply suffice to use string interpolation to write the SQL query if one wants to use variables or logic.
 
 However when thinking about all of the possible implementations of a Rust-to-SQL library this version with extensive use of Rust features in the style of Rust's safety guarantees quickly became my favourite. This kind of a transpiler is vastly interesting to simply think about how to structure the internal representations and logic, and its complexity is something I'm hoping to push me into learning more and writing better Rust.
+
+
+<div align="right">
+  <a href="https://notbyai.fyi/">
+  <img src="./assets/not-by-ai.png">
+  </a>
+</div>
