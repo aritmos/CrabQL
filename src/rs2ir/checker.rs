@@ -1,6 +1,28 @@
+use super::{
+    expr::ExprResult,
+    schema::{CompiledSchema, DerivedSchema},
+};
+
 pub type CheckOk = ();
 pub enum CheckErr {}
 pub type CheckResult = Result<CheckOk, CheckErr>;
+
+pub struct CompiledChecker<'s> {
+    schema: &'s CompiledSchema,
+    // "virtual schema" goes here
+}
+
+pub struct DerivedChecker {
+    schema: DerivedSchema,
+}
+
+impl DerivedChecker {
+    pub fn new() -> Self {
+        Self {
+            schema: DerivedSchema::new(),
+        }
+    }
+}
 
 /// Used to check and merge expressions.
 pub trait Checker {
@@ -32,5 +54,29 @@ pub trait Checker {
             }
             expr_ok
         }
+    }
+}
+
+impl Checker for DerivedChecker {
+    type Expr = ExprResult;
+
+    unsafe fn check(&self, _expr: Self::Expr) -> CheckResult {
+        todo!()
+    }
+
+    unsafe fn merge(&mut self, _expr: Self::Expr) {
+        todo!()
+    }
+}
+
+impl<'s> Checker for CompiledChecker<'s> {
+    type Expr = ExprResult;
+
+    unsafe fn check(&self, _expr: Self::Expr) -> CheckResult {
+        todo!()
+    }
+
+    unsafe fn merge(&mut self, _expr: Self::Expr) {
+        todo!()
     }
 }

@@ -1,22 +1,10 @@
-use super::schema::Schema;
-
-pub type WriterT<'s, S> = Writer<'s, S, usize, Result<(), String>>;
-
-pub struct Writer<'s, S, I, T> {
-    pub schema: &'s mut S, // impl Schema
-    pub internals: I,
-    pub state: T,
+// TODO: Remove Q and T generics once their types are settled
+pub struct Writer<'c, C, Q, T> {
+    pub(super) checker: &'c mut C,
+    pub(super) state: T,
+    pub(super) query: Q,
 }
 
-impl<'s, S, I, T> Writer<'s, S, I, T> {
-    pub fn new(schema: &'s mut S, internals: I, state: T) -> Self
-    where
-        S: Schema,
-    {
-        Writer {
-            internals,
-            schema,
-            state,
-        }
-    }
+pub struct SealedWriter<T> {
+    state: T,
 }
