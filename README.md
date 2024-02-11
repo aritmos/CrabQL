@@ -87,21 +87,28 @@ GROUP BY campaign
 ORDER BY campaign
 ```
 
-### 🌿 Natural?
+### 🌿 Natural
 
-One of the core values of `rs2sql` is that of it providing _natural_ Rust code. In particular this means **no string expression parsing**. Other crates providing a Rust to SQL translation often use an API like:
+One of the core values of `rs2sql` is that of it providing _natural_ Rust code. 
+In particular this means **no string expression parsing**.
+Other crates providing a Rust to SQL translation often use an API like:
 
 ```rust
 selection.where("version > 12").select("'v' + str(version) + '_x86_64-linux'")
 ```
 
-With internal logic parsing the expression encoded into the string. I don't like this and I don't want it. Instead `rs2sql` makes use of Rust's associated type parameters allowing the "overloading" of common operations to return new types which encode the action. These are then packaged inside of closures providing access into the query builder's state. Sadly the only case where this pattern cannot be implemented is ordering and equality, which require the use of methods:
+With internal logic parsing the expression encoded into the string. I don't like this and I don't want it. 
+Instead `rs2sql` makes use of Rust's associated type parameters allowing the "overloading" of common
+operations to return new types which encode the action. These are then packaged inside of closures 
+providing access into the query builder's state. Sadly the only case where this pattern cannot be 
+implemented is ordering and equality, which require the use of methods:
 
 ```rust
 selection.where(|t| t["version"].gt(12)).select(|t| "v" + t["version"] + "_x86_64-linux")
 ```
 
-The ability to write your query's expressions as normal rust code means complex queries remain easy to write and read. Imagine writing the following `WHERE` clause within the string-parsing Rust-to-SQL crates:
+The ability to write your query's expressions as normal rust code means complex queries remain easy
+to write and read. Imagine writing the following `WHERE` clause within the string-parsing Rust-to-SQL crates:
 
 ```sql
 SELECT *
@@ -115,7 +122,12 @@ WHERE (salary > 100_000 OR department = 'Engineering')
   AND (NOT EXISTS (SELECT 1 FROM disciplinary_actions WHERE employee_id = employees.id))
 ```
 
-... at that point you might as well write the entire query into a string. Users can alternatively break up the filter into subqueries, which can work as long as the logic is decoupled but does fragment the flow of the query's creation. On the other hand with `rs2sql` we can write the whole thing within a single block, making use of variables, comments, and logic-segmentation as we please:
+... at that point you might as well write the entire query into a string. 
+Users can alternatively break up the filter into subqueries, 
+which can work as long as the logic is decoupled but does fragment the flow of the query's creation.
+
+On the other hand with `rs2sql` we can write the whole thing within a single block, 
+making use of variables, comments, and logic-segmentation as we please:
 
 ```rust
 reader.table("employees").filter(|t| {
@@ -171,8 +183,8 @@ For example a user might create a query that defines a new column within a table
 
 ## 🤨 Why??
 
-All of this talk about types, and state checking, manipulation and safety seems like quite a lot of complexity for what tends to be a straightforward task. Is it really worth it? Probably no.
+All of this talk about types, and state checking, manipulation and safety seems like quite a lot of complexity for what tends to be a generally straightforward task. Is it really worth it? Yes ... maybe ... who knows.
 
 I assume that the large majority of projects that manipulate databases through an application boundary keep their queries nice and small. In many cases it might simply suffice to use string interpolation to write the SQL query if one wants to use variables or logic.
 
-However when thinking about all of the possible implementations of a Rust-to-SQL library this version with extensive use of Rust features in the style of Rust's safety guarantees quickly became my favourite. As a project it is vastly interesting to simply think about how to structure the internal representations and logic, and its complexity is something I'm hoping to push me into learning more and writing better Rust code.
+However when thinking about all of the possible implementations of a Rust-to-SQL library this version with extensive use of Rust features in the style of Rust's safety guarantees quickly became my favourite. This kind of a transpiler is vastly interesting to simply think about how to structure the internal representations and logic, and its complexity is something I'm hoping to push me into learning more and writing better Rust.
