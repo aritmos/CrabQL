@@ -27,3 +27,6 @@ pub mod value;
 
 /// Functions on columns and expressions
 pub mod funcs;
+
+/// Temp module for experimental stuff
+pub mod testing;
