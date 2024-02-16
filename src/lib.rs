@@ -1,12 +1,13 @@
-/// Rust to Intermediate Representation
-pub mod rs2ir;
+#![allow(unused)]
 
-/// Intermediate Representation to Rust
-pub mod ir2sql;
+/// Expressions and Functions
+pub mod expr;
 
-/// SQL to Intermediate Representation
-pub mod sql2ir;
+/// Create SQL Expressions
+pub mod reader;
 
-pub mod prelude {
-    pub use crate::rs2ir::funcs::Functions;
-}
+/// Query Verification
+pub mod checker;
+
+/// Experimental Testing
+pub mod testing;

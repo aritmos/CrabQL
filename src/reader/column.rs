@@ -1,8 +1,8 @@
-use super::funcs::Mappings;
+use super::super::expr::funcs::Mappings;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Column<'c> {
-    pub(super) name: &'c str,
+    pub name: &'c str,
 }
 
 impl<'c> Column<'c> {

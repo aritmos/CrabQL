@@ -1,10 +1,11 @@
-#![allow(unused)]
+pub mod funcs;
+pub mod value;
+
 use std::ops::{BitAnd, BitOr};
 
-use super::{
-    column::Column,
+use {
+    super::reader::column::Column,
     funcs::{Functions, Mappings},
-    value,
     value::Value,
 };
 

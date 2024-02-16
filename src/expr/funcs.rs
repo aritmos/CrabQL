@@ -1,7 +1,4 @@
-use super::{
-    expr::{BaseExpr, BoolExpr, BoolOp::*, Expr, ExprErr, ExprResult, FuncExpr},
-    value::Value,
-};
+use super::{value::Value, BaseExpr, BoolExpr, BoolOp::*, Expr, ExprErr, ExprResult, FuncExpr};
 
 /// Functions that can be applied to expressions
 pub enum Functions {

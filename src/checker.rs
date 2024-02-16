@@ -1,6 +1,6 @@
 use super::{
     expr::ExprResult,
-    schema::{CompiledSchema, DerivedSchema},
+    reader::schema::{CompiledSchema, DerivedSchema},
 };
 
 pub type CheckOk = ();
@@ -9,9 +9,11 @@ pub type CheckResult = Result<CheckOk, CheckErr>;
 
 pub struct CompiledChecker<'s> {
     schema: &'s CompiledSchema,
-    // "virtual schema" goes here
+    // another field should go here to track user additions
+    // TODO
 }
 
+#[derive(Default)]
 pub struct DerivedChecker {
     schema: DerivedSchema,
 }

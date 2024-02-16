@@ -1,4 +1,4 @@
-use super::{checker::Checker, column::Column, expr::ExprResult, table::Table};
+use super::{super::checker::Checker, super::expr::ExprResult, column::Column, table::Table};
 
 // TODO: Remove Q and T generics once their types are settled
 pub struct Reader<'c, C, Q, T> {
@@ -58,7 +58,7 @@ impl<'c, C, Q, T> Reader<'c, C, Q, T> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{checker::DerivedChecker, funcs::Mappings};
+    use super::super::super::{checker::DerivedChecker, expr::funcs::Mappings};
     use super::*; // Required for things to be in scope
 
     #[test]
