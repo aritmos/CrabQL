@@ -1,164 +1,155 @@
 #![allow(unused)]
 
-type Expr = Box<dyn Expression>;
+// --- READER ---
 
-type CheckExpr = String;
+pub struct Reader;
 
-// Expression evaluation types that need to be enforced by a checker.
-pub enum ExprType {
-    Numeric,
-    Textual,
-    Boolean,
-    Any, // used as a NULLOP condition
+impl Reader {
+    pub fn filter(self, expr: impl Boolean + 'static) -> Self {
+        let expr: Box<dyn Boolean> = Box::new(expr);
+        self._filter(expr)
+    }
+
+    fn _filter(self, _e: Box<dyn Boolean>) -> Self {
+        self
+    }
+
+    pub fn select_all(self) -> Self {
+        self
+    }
 }
 
-// The checker takes an iterator of expressions and evaluates them,
-// stopping when it encounters an error (?) or perhaps accumulating all errors
-// assuming that any error propagation in constructions can be mitigated.
-pub trait Checker {
-    fn check(&mut self, conditions: impl IntoIterator<Item = CheckExpr>) -> Result<(), String>;
-}
+// --- EXPR ---
 
 // A general expression defines any set of internal conditions that need to be
 // checked by an external source (a `Checker`).
-pub trait Expression {
-    fn conditions(&self, ctx: ExprType) -> Box<dyn Iterator<Item = CheckExpr> + '_>;
-}
+pub trait Expression {}
 
 // These subtraits are implemented for expressions which have the respective certain return type
 pub trait Textual: Expression {}
-pub type Text = Box<dyn Textual>;
-
 pub trait Boolean: Expression {}
-pub type Bool = Box<dyn Boolean>;
-
 pub trait Numeric: Expression {}
-pub type Num = Box<dyn Numeric>;
 
-// `Misc` is for unique expression returns.
-// e.g. an ordering expression: `t["name"].asc()`
 pub trait Miscellaneous: Expression {}
-pub type Misc = Box<dyn Miscellaneous>;
 
-// `Any` is used for expressions which don't have a fixed return type.
-// e.g. columns and CASE expressions.
 pub trait Anything: Textual + Boolean + Numeric {}
-pub type Any = Box<dyn Anything>;
 
-pub struct LitExpr<V> {
-    val: V,
-}
-impl<V> Expression for LitExpr<V> {
-    fn conditions(&self, _: ExprType) -> Box<dyn Iterator<Item = CheckExpr>> {
-        // literary expressions have no inner conditions to check
-        Box::new(std::iter::empty())
-    }
-}
-impl Textual for LitExpr<String> {}
-impl Numeric for LitExpr<usize> {}
-
-impl From<usize> for Num {
-    fn from(val: usize) -> Self {
-        Box::new(LitExpr { val })
+impl<'t, T: Boolean + 't> From<T> for Box<dyn Boolean + 't> {
+    fn from(value: T) -> Self {
+        Box::new(value)
     }
 }
 
-struct StrConcatExpr {
-    lhs: Text,
-    rhs: Text,
-}
-impl Expression for StrConcatExpr {
-    // exprtype not needed as `Self` is strictly `Textual`
-    fn conditions(&self, _: ExprType) -> Box<dyn Iterator<Item = CheckExpr> + '_> {
-        Box::new(
-            [&self.lhs, &self.rhs]
-                .into_iter()
-                .flat_map(|elem| elem.conditions(ExprType::Textual)),
-        )
-    }
-}
-impl Textual for StrConcatExpr {}
+// --- TYPES ---
 
-impl std::ops::Add for Box<dyn Textual> {
-    type Output = Box<dyn Textual>;
+// Literal usizes as `Numeric` expressions
+impl Expression for usize {}
+impl Numeric for usize {}
 
-    fn add(self, rhs: Self) -> Self::Output {
-        Box::new(StrConcatExpr { lhs: self, rhs })
-    }
-}
+// Literal Strings as `Textual` expressions
+impl Expression for String {}
+impl Textual for String {}
 
-struct LenExpr {
-    inner: Text,
-}
-impl Expression for LenExpr {
-    // exprtype not needed as `Self` is strictly `Textual`
-    fn conditions(&self, _: ExprType) -> Box<dyn Iterator<Item = CheckExpr> + '_> {
-        // inner type must be textual
-        self.inner.conditions(ExprType::Textual)
-    }
-}
+// Literal booleans as `Boolean` expressions
+impl Expression for bool {}
+impl Boolean for bool {}
 
+// Columns as `Anything`
 struct Column {
     name: String,
 }
-impl Expression for Column {
-    fn conditions(&self, ctx: ExprType) -> Box<dyn Iterator<Item = CheckExpr>> {
-        let exist = format!("Column `{}` must exist in context", self.name);
-
-        // debug printing to test
-        let kind = match ctx {
-            ExprType::Numeric => Some("numeric"),
-            ExprType::Textual => Some("textual"),
-            ExprType::Boolean => Some("boolean"),
-            _ => None,
-        };
-        if let Some(kind) = kind {
-            let kind_condition = format!("Column `{}` must be {}", self.name, kind);
-            Box::new([exist, kind_condition].into_iter())
-        } else {
-            Box::new(std::iter::once(exist))
-        }
-    }
-}
+impl Expression for Column {}
 impl Textual for Column {}
 impl Numeric for Column {}
 impl Boolean for Column {}
 impl Anything for Column {}
 
-pub struct GTExpr {
-    lhs: Num,
-    rhs: Num,
-}
-impl Expression for GTExpr {
-    fn conditions(&self, ctx: ExprType) -> Box<dyn Iterator<Item = CheckExpr> + '_> {
-        Box::new(
-            [&self.lhs, &self.rhs]
-                .into_iter()
-                .flat_map(|x| x.conditions(ExprType::Numeric)),
-        )
-    }
-}
-impl Boolean for GTExpr {}
-
-pub trait GT {
-    fn gt(self, rhs: impl Into<Num>) -> Bool;
+// No need for `Table`s, this is a clean approach with less indirection.
+fn col(name: impl Into<String>) -> Column {
+    Column { name: name.into() }
 }
 
-impl GT for Num {
-    fn gt(self, rhs: impl Into<Num>) -> Bool {
-        Box::new(GTExpr {
-            lhs: self,
-            rhs: rhs.into(),
-        })
+// Every type will implement its operand functionality individually.
+// In the case of `Anything`s we need to be careful about how we distinguish
+// `Add<R: Textual>` from `Add<R: Numeric>` and so on.
+// Literal types should work well with this approach as their default
+// implementation makes sense in the expression's context.
+impl<R: Boolean + 'static> std::ops::BitAnd<R> for Column {
+    type Output = AndExpr;
+
+    fn bitand(self, rhs: R) -> Self::Output {
+        And::and(self, rhs)
     }
 }
 
-impl GT for Any {
-    fn gt(self, rhs: impl Into<Num>) -> Bool {
-        Box::new(GTExpr {
-            lhs: self,
-            rhs: rhs.into(),
-        })
+// `LENGTH(textual)` expression
+pub struct LenExpr {
+    inner: Box<dyn Textual>,
+}
+impl Expression for LenExpr {}
+impl Numeric for LenExpr {}
+
+#[allow(clippy::len_without_is_empty)]
+pub trait Len {
+    fn len(self) -> LenExpr;
+}
+
+impl<T: Textual + 'static> Len for T {
+    fn len(self) -> LenExpr {
+        LenExpr {
+            inner: Box::new(self),
+        }
+    }
+}
+
+// `textual || textual` expression
+pub struct StrConcatExpr {
+    lhs: Box<dyn Textual>,
+    rhs: Box<dyn Textual>,
+}
+impl Expression for StrConcatExpr {}
+impl Textual for StrConcatExpr {}
+
+// `numeric > numeric` expression
+pub struct GTExpr<'t> {
+    lhs: Box<dyn Numeric + 't>,
+    rhs: Box<dyn Numeric + 't>,
+}
+impl<'t> Expression for GTExpr<'t> {}
+impl<'t> Boolean for GTExpr<'t> {}
+
+pub trait GT<'t, R> {
+    fn gt(self, rhs: R) -> GTExpr<'t>
+    where
+        Self: Sized;
+}
+
+impl<'t, L: Numeric + 't, R: Numeric + 't> GT<'t, R> for L {
+    fn gt(self, rhs: R) -> GTExpr<'t> {
+        GTExpr {
+            lhs: Box::new(self),
+            rhs: Box::new(rhs),
+        }
+    }
+}
+
+// `boolean AND boolean` expression
+pub struct AndExpr {
+    lhs: Box<dyn Boolean>,
+    rhs: Box<dyn Boolean>,
+}
+impl Expression for AndExpr {}
+impl Boolean for AndExpr {}
+
+pub trait And<R>: Boolean {
+    fn and(self, rhs: R) -> AndExpr;
+}
+impl<L: Boolean + 'static, R: Boolean + 'static> And<R> for L {
+    fn and(self, rhs: R) -> AndExpr {
+        AndExpr {
+            lhs: Box::new(self),
+            rhs: Box::new(rhs),
+        }
     }
 }
 
@@ -167,47 +158,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn trait_upcasting() {
-        let col: Box<dyn Anything> = Box::new(Column {
-            name: "fname".to_owned(),
-        });
-
-        let txt1: Box<dyn Textual> = Box::new(LitExpr {
-            val: "hello".to_owned(),
-        });
-
-        let txt2: Box<dyn Textual> = Box::new(LitExpr {
-            val: "hello".to_owned(),
-        });
-
-        let str_concat = txt1 + col + txt2;
-
-        // manual casting is required if the Any type comes first
-        // let str_concat = (col as Text) + txt2;
-
-        // ExprType not needed as StrConcatExpr is Textual
-        for cond in str_concat.conditions(ExprType::Any) {
-            println!("CONDITION: {}", cond);
-        }
-    }
-
-    #[test]
-    fn col_condition() {
-        let col = Column {
-            name: "test".to_owned(),
-        };
-        for cond in col.conditions(ExprType::Any) {
-            println!("CONDITION: {}", cond);
-        }
-    }
-
-    #[test]
-    fn test_gt() {
-        let col: Box<dyn Anything> = Box::new(Column {
-            name: "id".to_owned(),
-        });
-
-        // let _ = 3.as_expr().gt(5);
-        let _ = col.gt(3);
+    fn foo() {
+        let _r = Reader
+            .filter({
+                let is_adult = col("age").gt(17);
+                col("employeed") & is_adult
+            })
+            .select_all();
     }
 }
