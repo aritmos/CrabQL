@@ -9,10 +9,10 @@
   <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" font-family="Arial-BoldMT, Arial" font-weight="bold" style="fill: none; fill-rule: evenodd; font-weight: 700; line-height: 18.4px; font-family: Arial-BoldMT, Arial; font-kerning: auto; font-optical-sizing: auto; font-language-override: normal; font-feature-settings: normal; font-variation-settings: normal; paint-order: normal; text-decoration: rgb(0, 0, 0);">
     <g id="gh-banner" style="paint-order: normal; text-decoration: rgb(0, 0, 0);">
       <text id="gh-title-reflection" fill="url(#linearGradient-1)" font-size="80" style="fill: url(&quot;#linearGradient-1&quot;); font-size: 80px; line-height: 55.2px; font-kerning: auto; font-optical-sizing: auto; font-language-override: normal; font-feature-settings: normal; font-variation-settings: normal; paint-order: normal; text-decoration: rgb(0, 0, 0);">
-        <tspan x="444" y="234" text-anchor="middle" style="paint-order: normal; text-anchor: middle; text-decoration: rgb(0, 0, 0);">RS 🡒 SQL</tspan>
+        <tspan x="444" y="234" text-anchor="middle" style="paint-order: normal; text-anchor: middle; text-decoration: rgb(0, 0, 0);">CrabQL</tspan>
       </text>
       <text id="gh-title-reflection-copy" font-size="24" fill="#4D4E56" style="fill: rgb(77, 78, 86); font-size: 24px; line-height: 20.7px; font-kerning: auto; font-optical-sizing: auto; font-language-override: normal; font-feature-settings: normal; font-variation-settings: normal; paint-order: normal; text-decoration: rgb(0, 0, 0);">
-        <tspan x="444" y="309" text-anchor="middle" style="paint-order: normal; text-anchor: middle; text-decoration: rgb(0, 0, 0);">Generate SQL from natural Rust code</tspan>
+        <tspan x="444" y="309" text-anchor="middle" style="paint-order: normal; text-anchor: middle; text-decoration: rgb(0, 0, 0);">Natural SQL Query Generation in Rust</tspan>
       </text>
     </g>
   </g>

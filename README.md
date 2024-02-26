@@ -1,22 +1,33 @@
 <img width="100%" src="./assets/banner.svg">
 
-## 🚧 CAUTION
+## ✨ Features
 
-- This project is still in very very early stages of production, I am still figuring out how to
-best design the core functionality of the project.
-- Take a look at the [`wiki`](https://github.com/aritmos/rs2sql/wiki) some examples of the potential
-uses of `rs2sql`.
-- Upon further development, eventually I plan to publish the crate to [crates.io](https://crates.io).
+`CrabQL` allows you to generate SQL queries that are
+### Natural
 
-## ✨ Focus and Goals
+- No string parsing. Use proper types that compose into expressions
 
-`rs->sql`(or `rs2sql`) is an ambitious project to "rustify the SQL language", stemming from a
-thought of how database querying would have been implemented by the "Rust team". 
-This project by no means attempts to be a complete reimagining of the SQL language;
-it simply tries to port the SQL syntax into a natural and friendly functional Rust code.
+### Type Safe
 
-The core of the library is a query builder that can output `String`s of SQL.
-As an experimental draft I have something like this in mind:
+- Query building is type-safe by construction; operations can only be generally used in correct contexts and internal representations are validated during a query's compilation. 
+
+### Schema Validated
+
+- Schemas can be used to additionally validate every table/column access and operations alongside with any other state-reliant operation.  
+
+### Transactionally Safe
+
+- Queries that depend on each other can only be generated as a single multi-query. This ensures any required ordering when executing the queries.
+
+## 🚧 CAUTION: W.I.P.
+- `CrabQL` is still in very early stages of production. There is still much work to do in the foundational back-end. Come back in a couple weeks/months to see what was implemented!
+- The [`wiki`](https://github.com/aritmos/crabql/wiki) contains examples of the currently proposed API / crate use. 
+- This project will eventually be published as a crate upon completing all core functionality in `0.2.0`.
+
+## 📚 Use
+
+The core of the library is a query builder that can creates the SQL queries.
+The current (partially implemented) use case is as follows:
 
 ```rust
 let query = {
@@ -26,17 +37,17 @@ let query = {
     let monthly_cost: SQLQuery = {
         let monthly_cost: SealedReader = reader
             .table("marketing")
-            .new_col("category", |t| { 
+            .new_col("category", { 
                 case!{                
-                    t["created_date"].lt(Date::new("2020-04-01")) => "pre-pandemic",
-                    t["created_date"].lt(Date::new("2024-01-01")) => "last year",
+                    col("created_date").lt(Date::new("2020-04-01")) => "pre-pandemic",
+                    col("created_date").lt(Date::new("2024-01-01")) => "last year",
                     _ => "recent",
                 } 
             }) 
-            .filter(|t| t["category"].neq("old") & t["completed"].eq(true))
-            .select_as("cost_by_month", |t| {
-                let month = t["created_date"].to_char("YYYY-MM"); 
-                [ t["campaign_id"].as("campaign"), month, t["cost"].sum().as("monthly_cost") ]
+            .filter(col("category").neq("old") & col("completed"))
+            .select_as("cost_by_month", {
+                let month = col("created_date").to_char("YYYY-MM"); 
+                [ col("campaign_id").as("campaign"), month, col("cost").sum().as("monthly_cost") ]
             }).unwrap(); 
 
         
@@ -44,8 +55,8 @@ let query = {
             .unseal(&mut checker)
             .group_by("campaign") 
             .order_by("campaign")
-            .select(|v| {
-                [v["campaign"], v["monthly_cost"].avg().as("avg cost")]
+            .select({
+                [col("campaign"), col("monthly_cost").avg().as("avg cost")]
             })
             .unwrap()
             .to_sql()
@@ -79,28 +90,29 @@ GROUP BY campaign
 ORDER BY campaign
 ```
 
+`CrabQL` is built with different SQL flavours in mind, and plans to eventually support all major dialects. However during it's early stages the focus will be on generating PostgreSQL-compliant queries, as that is what I personally use.
+
 ### 🌿 Natural
 
-One of the core values of `rs2sql` is that of it providing _natural_ Rust code. 
-In particular this means **no string expression parsing**.
-Other crates providing a Rust to SQL translation often use an API like:
+One of the core values of `CrabQL` is that of writing _natural_ Rust code. 
+In particular this means discarding the common use of **string expression parsing**
+as seen in similar crates, e.g.
 
 ```rust
-selection.where("version > 12").select("'v' + str(version) + '_x86_64-linux'")
+selection
+    .where("version > 12 AND is_stable")
+    .select("'v' + str(version) + '_x86_64-linux'")
 ```
 
-With internal logic parsing the expression encoded into the string. I don't like this and I don't want it. 
-Instead `rs2sql` makes use of Rust's associated type parameters allowing the "overloading" of common
-operations to return new types which encode the action. These are then packaged inside of closures 
-providing access into the query builder's state. Sadly the only case where this pattern cannot be 
-implemented is ordering and equality, which require the use of methods:
+`CrabQL` uses proper types that can be composed via natural methods along with the overloading of common binary operators such as `BitAnd`/`BitOr`/`Neg` for logical `AND`/`OR`/`NOT` operations, as well as all the common arithmetic operators. Sadly the nature of Rust's type system doesn't allow for the specific overloading of comparison operators that is required, and these operations are left as methods.
 
 ```rust
-selection.where(|t| t["version"].gt(12)).select(|t| "v" + t["version"] + "_x86_64-linux")
+selection
+    .where(col("version").gt(12) & col("is_stable"))
+    .select_one("v" + col("version") + "_x86_64-linux")
 ```
 
-The ability to write your query's expressions as normal rust code means complex queries remain easy
-to write and read. Imagine writing the following `WHERE` clause within the string-parsing Rust-to-SQL crates:
+A type system like this, unlike string parsing, allows for the use of variables, comments and spacing to write clearer, more understandable expressions. It also allows one to call functions, APIs or any other endpoint to get necessary data. As an example, the following (100% real I-saw-it-in-production-last-week) expression is exteremly ill-suited for string parsing:
 
 ```sql
 SELECT *
@@ -114,58 +126,58 @@ WHERE (salary > 100_000 OR department = 'Engineering')
   AND (NOT EXISTS (SELECT 1 FROM disciplinary_actions WHERE employee_id = employees.id))
 ```
 
-... at that point you might as well write the entire query into a string. 
-Users can alternatively break up the filter into subqueries, 
-which can work as long as the logic is decoupled but does fragment the flow of the query's creation.
-
-On the other hand with `rs2sql` we can write the whole thing within a single block, 
-making use of variables, comments, and logic-segmentation as we please:
+With `CrabQL` the expression takes on a simple and readable form
 
 ```rust
-reader.table("employees").filter(|t| {
-    let high_salary = 100_000;
-    let high_salary_engineers = t["salary"].gt(high_salary) & t["department"].eq("Engineering"); 
-    let active_and_young = t["age"].between(25, 35) & t["status"].eq("Active");
-    let big_office = t["city"].in(external_api.get_main_offices)
-    let is_manager = t["manager_id"].is_null();
+reader.table("employees").filter({
+    const HIGH_SALARY = 100_000;
+    let high_salary_engineers = col("salary").gt(HIGH_SALARY) & col("department").eq("Engineering"); 
+    let active_and_young = col("age").between(25, 35) & col("status").eq("Active");
+    let big_office = col("city").in(external_api.get_main_offices())
+    let is_manager = !col("manager_id").is_null();
     ...
 
-    high_salary_engineers & ... & (big_office | !is_manager) & ...
+    high_salary_engineers & ... & (big_office | is_manager) & ...
 })
 ```
 
 ### 🚑 Safe
 
 #### Type Safety 
-One of the benefits of foregoing string-parsing is gaining the type-safety that rust can provide. The user doesn't have to double check that there are no missing quotation marks or brackets in a complex statement.
+One of the benefits of foregoing string-parsing is gaining the type-safety that rust can provide.
+- The user doesn't have to double check that there are no missing quotation marks or brackets in a complex statement. 
+- Operations such as `AND` can only be used on boolean expressions, and similarly for all other overloaded operators.
+- Methods such as `.len()` (mapping to a `LENGTH()` statement) are only implemented for textual expression, and so forth.
 
 #### State Safety
-The other core safety-related feature, is that `rs2sql` **guarantees query correctness at the query's build time**. This is done by feeding the query builder the databases schema. As the query is built, every statement gets checked for correctness: does this table exist? is this column numeric? etc. Users may opt out of using a pre-fetched database schema (internally called a `CompiledSchema`) and instead use a `DerivedSchema`.
-
-A `DerivedSchema` starts as a blank slate, and doesn't require any information about the database. As queries are created using this object, it keeps track of the accesses that are made, the operations on columns, etc. The `DerivedSchema` guarantees that any queries are simply self-consistent (this is also done implicitly with a `CompiledSchema`). So if one query uses `employees.id` as a string, another can't be using it as an integer.
+The other core safety-related feature, is that `CrabQL` **guarantees query correctness within the query's compilation**.
+- This is done by providing the query builder the a copy database's schema. As the query is built, every statement gets checked for correctness: does this table exist? is this column numeric? etc. 
+- Users may opt out of using the existing database's schema (internally called a `CompiledSchema`) and instead use a `DerivedSchema`, which builds itself upon use.
+  - A `DerivedSchema` checks for the self-consistency of a query. It keeps track of how tables and columns are used to find the inner types of objects.
+  - It then validates that there is no erroneous use such as a column being treated as containing text at one point, but numbers in another.
 
 ```rust
-let mut checker = DerivedChecker::new(); // schema is built along with the operations that use it
-// all of the following accesses are added into the schema. any clashes would result in an error
+let mut checker = DerivedChecker::new(); // internally uses a `DerivedSchema`
 
-// The checker infers that the _likes_ column is numeric.
+// The checker infers that the <likes> column is numeric.
 let view1 = Reader::new(&mut checker)
     .table("post_likes")
-    .select(|t| [t["post_id"], t["likes"] + 1]) 
+    .select([col("post_id"), col("likes") + 1]) 
     .unwrap();
 
-// Checker throws an error because _likes_ column is numeric but string concatenation requires a string.
-// The error is stored in the reader's state, which will fail to seal.
+// The checker will throw an error when sealing the query because <likes> column is numeric but string concatenation requires a string.
 let view2 = Reader::new(&mut checker)
     .table("post_likes")
     .select(|v| [v["post_id"], v["likes"] + "text"]) 
 ```
 
+Although the error is imediately found when an expression is used in a method, in order to allow for better type ergonomics, it is not exposed to the user until the entire query is sealed (finished)
+
 #### Ordering Safety
 
-Both the `CompiledSchema` and `DerivedSchema` update themselves to include any internal views or table modifications that the user defines. Self-consistency is a great feature to have in long read-write operations where the database's internal state is bound to change. `rs2sql` aims to implement a locking mechanism to ensure that any cases that depend on a specific query-ordering can only procude SQL queries that guarantee this ordering. 
+Both the `CompiledSchema` and `DerivedSchema` update themselves to include any internal views or table modifications that the user defines. Self-consistency is a great feature to have in long read-write operations where the database's internal state is bound to change. `CrabQL` aims to implement a locking mechanism to ensure that any cases that depend on a specific query-ordering can only procude SQL queries that guarantee this ordering. 
 
-For example a user might create a query that defines a new column within a table, and a subsequent query might write values into that new column. The aim is to ensure that these two queries can only be finaly parsed into an SQL `String` together, in their necessary order. If this werent the case, and the user could separately create the queries, there is no guarantee that they will be called within the database in the right order!
+For example a user might create a query that defines a new column within a table, and a subsequent query might write values into that new column. The aim is to ensure that these two queries can only be parsed as a single combined SQL query ensuring their necessary order. 
 
 ```rust
 // TODO: API is still too-underdeveloped to showcase how the locking mechanism works
@@ -175,11 +187,11 @@ For example a user might create a query that defines a new column within a table
 
 ## 🤨 Why??
 
-All of this talk about types, and state checking, manipulation and safety seems like quite a lot of complexity for what tends to be a generally straightforward task. Is it really worth it? Yes ... maybe ... who knows.
+All of this talk about types, and state checking, manipulation and safety seems like quite a lot of complexity for what tends to be a generally straightforward task. Is it really worth it? Yes ... maybe ... no ... who knows.
 
-I assume that the large majority of projects that manipulate databases through an application boundary keep their queries nice and small. In many cases it might simply suffice to use string interpolation to write the SQL query if one wants to use variables or logic.
+It is likely that the large majority of projects that manipulate databases through an application boundary keep their queries nice and small. In many cases it might simply suffice to use a simpler string-parsing library.
 
-However when thinking about all of the possible implementations of a Rust-to-SQL library this version with extensive use of Rust features in the style of Rust's safety guarantees quickly became my favourite. This kind of a transpiler is vastly interesting to simply think about how to structure the internal representations and logic, and its complexity is something I'm hoping to push me into learning more and writing better Rust.
+However when thinking about all of the possible implementations of a Rust-to-SQL library this version with extensive use of Rust features in the style of Rust's safety guarantees quickly became my favourite. A transpiler like this is vastly interesting to just think about how to handle the internal representations and logic, and it's complexity is something I'm hoping to push me into learning more and writing better Rust.
 
 
 <div align="right">
