@@ -1,7 +1,18 @@
-use super::{super::checker::Checker, super::expr::ExprResult, column::Column, table::Table};
+use super::{
+    super::{checker::Checker, expr::ExprResult},
+    column::Column,
+    table::Table,
+};
+
+// The query that is being built
+type Q = ();
+
+// The context/state of the reader.
+// Used for validating expressions
+type T = ();
 
 // TODO: Remove Q and T generics once their types are settled
-pub struct Reader<'c, C, Q, T> {
+pub struct Reader<'c, C> {
     pub(super) checker: &'c mut C,
     pub(super) state: T,
     pub(super) query: Q,
@@ -11,12 +22,10 @@ pub struct SealedReader<T> {
     state: T,
 }
 
-impl<'c, C, Q, T> Reader<'c, C, Q, T> {
+impl<'c, C> Reader<'c, C> {
     pub fn new(checker: &'c mut C) -> Self
     where
         C: Checker,
-        Q: Default,
-        T: Default,
     {
         Reader {
             checker,
