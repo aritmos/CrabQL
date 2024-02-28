@@ -1,13 +1,16 @@
 /// Expressions that can evaluate to any standard (non-custom) type
-mod any;
+pub mod any;
 /// Expressions that evaluate into boolean values
-mod bool;
+pub mod bool;
 /// Expressions that evaluate into custom types
-mod misc;
+pub mod misc;
 /// Expressions that evaluate into numeric values
-mod num;
+pub mod num;
 /// Expressions that evaluate into textual values
-mod text;
+pub mod text;
+
+/// Prelude for expression definitions
+mod prelude;
 
 use super::checker::Condition;
 
@@ -35,7 +38,18 @@ pub enum Dialect {
 
 /// Common functionality for expressions.
 pub trait Expression {
+    /// Returns the conditions that need to be verified by a [`Checker`]
+    /// in order for the expression to be correct
     fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition>>;
 
+    // RFC: replace dialect with `ops` that wraps dialect as well as if this is the outer
+    // expression so the aliasing shows
+    /// Returns the `String` representation of the expression in the given dialect
     fn display(&self, dialect: Dialect) -> String;
+
+    // Modify the display name of the expression.
+    //
+    // This modification is only visible on outer expressions,
+    // i.e. it means nothing on inner expressions
+    // fn alias(&mut self, id: String);
 }
