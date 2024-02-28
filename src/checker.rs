@@ -2,10 +2,7 @@
 mod cond;
 pub use cond::Condition;
 
-use super::{
-    expr::ExprResult,
-    reader::schema::{CompiledSchema, DerivedSchema},
-};
+use crate::schema::{CompiledSchema, DerivedSchema};
 
 pub type CheckOk = ();
 pub enum CheckErr {}

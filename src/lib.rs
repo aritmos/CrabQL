@@ -13,6 +13,9 @@ pub mod checker;
 /// Experimental Testing
 pub mod testing;
 
+/// Schemas
+pub mod schema;
+
 // #[cfg(test)]
 // mod tests {
 //     use super::super::{checker::DerivedChecker, expr::funcs::Mappings};
