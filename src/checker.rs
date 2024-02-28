@@ -1,5 +1,6 @@
 /// Standard conditions for a checker
 mod cond;
+pub use cond::Condition;
 
 use super::{
     expr::ExprResult,
