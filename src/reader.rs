@@ -1,8 +1,4 @@
-use super::{
-    super::{checker::Checker, expr::ExprResult},
-    column::Column,
-    table::Table,
-};
+use super::{checker::Checker, expr::bool::Boolean};
 
 // The query that is being built
 type Q = ();
@@ -41,12 +37,8 @@ impl<'c, C> Reader<'c, C> {
 
     /// Selects the given rows for reading, returns a `SealedReader` that cannot be internally
     /// modified further.
-    pub fn select<'t, 'col, Func, ColIter>(self, _f: Func) -> Result<SealedReader<T>, String>
-    where
-        Func: FnOnce(Table<'t>) -> ColIter,
-        ColIter: IntoIterator<Item = Column<'col>>,
-        't: 'col,
-    {
+    // TODO: Find out what to pass in
+    pub fn select(self /* <stuff> */) -> Result<SealedReader<T>, String> {
         todo!()
     }
 
@@ -57,10 +49,14 @@ impl<'c, C> Reader<'c, C> {
     }
 
     /// Filters the rows in the current table
-    pub fn filter<F>(self, _f: F) -> Self
-    where
-        F: FnOnce(Table) -> ExprResult,
-    {
+    pub fn filter(self, bool_expr: impl Boolean + 'static) -> Self {
+        // for ergonomic purposes accept any Boolean
+        // encapsulate the common behaviour in another function
+        // as to minimise code duplication
+        self.__filter(Box::new(bool_expr))
+    }
+
+    fn __filter(self, bool_expr: Box<dyn Boolean>) -> Self {
         todo!()
     }
 }
