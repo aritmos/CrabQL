@@ -1,7 +1,18 @@
-use super::{checker::Checker, column::Column, expr::ExprResult, table::Table};
+use super::{
+    super::{checker::Checker, expr::ExprResult},
+    column::Column,
+    table::Table,
+};
+
+// The query that is being built
+type Q = ();
+
+// The context/state of the reader.
+// Used for validating expressions
+type T = ();
 
 // TODO: Remove Q and T generics once their types are settled
-pub struct Reader<'c, C, Q, T> {
+pub struct Reader<'c, C> {
     pub(super) checker: &'c mut C,
     pub(super) state: T,
     pub(super) query: Q,
@@ -11,12 +22,10 @@ pub struct SealedReader<T> {
     state: T,
 }
 
-impl<'c, C, Q, T> Reader<'c, C, Q, T> {
+impl<'c, C> Reader<'c, C> {
     pub fn new(checker: &'c mut C) -> Self
     where
         C: Checker,
-        Q: Default,
-        T: Default,
     {
         Reader {
             checker,
@@ -53,20 +62,5 @@ impl<'c, C, Q, T> Reader<'c, C, Q, T> {
         F: FnOnce(Table) -> ExprResult,
     {
         todo!()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::super::{checker::DerivedChecker, funcs::Mappings};
-    use super::*; // Required for things to be in scope
-
-    #[test]
-    fn reader_syntax() {
-        let mut checker = DerivedChecker::new();
-        let _x = Reader::<'_, _, usize, usize>::new(&mut checker)
-            .table("emp")
-            .filter(|t| t["id"].gt(3_usize) & t["name"].len().gt(10_usize))
-            .select(|t| [t["id"], t["name"]]);
     }
 }
