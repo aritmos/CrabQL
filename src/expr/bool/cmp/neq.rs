@@ -28,6 +28,7 @@ impl Expression for NEqExpr {
     }
 }
 impl Boolean for NEqExpr {}
+super::super::logic::impl_bool_logic!(NEqExpr);
 
 pub trait NumNEq<R> {
     fn neq(self, rhs: R) -> NEqExpr;

@@ -40,6 +40,9 @@ macro_rules! impl_num_cmp {
         }
         impl Boolean for $struct {}
 
+        // Implement `AND` and `OR` via `BitAnd` and `BitOr`
+        super::logic::impl_bool_logic!($struct);
+
         pub trait $trait<R> {
             fn $method(self, rhs: R) -> $struct;
         }

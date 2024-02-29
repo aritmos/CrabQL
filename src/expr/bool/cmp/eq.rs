@@ -28,6 +28,7 @@ impl Expression for EqExpr {
     }
 }
 impl Boolean for EqExpr {}
+super::super::logic::impl_bool_logic!(EqExpr);
 
 pub trait NumEq<R> {
     fn eq(self, rhs: R) -> EqExpr;

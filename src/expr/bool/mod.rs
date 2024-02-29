@@ -6,3 +6,7 @@ pub trait Boolean: Expression {}
 /// Comparison expressions
 pub mod cmp;
 pub use cmp::*;
+
+/// Logical operator expressions
+pub mod logic;
+pub use logic::*;
