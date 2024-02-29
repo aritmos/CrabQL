@@ -18,6 +18,7 @@ use super::checker::Condition;
 ///
 /// `Any` is an expression that can return any other return type in this enum.
 /// It exists as a "nullop" within coercion environments.
+#[derive(PartialEq, Eq, Copy, Clone)]
 pub enum ExprType {
     // Expressions that can return any type, such as columns and `CASE`s.
     Any,
@@ -32,6 +33,7 @@ pub enum ExprType {
 /// Supported dialects, used for expression to string conversion
 // RFC: these might also need to be used to validate the actual expressions
 // themselves as not all dialects support all operations
+#[derive(Copy, Clone)]
 pub enum Dialect {
     Postgres,
 }
@@ -40,7 +42,7 @@ pub enum Dialect {
 pub trait Expression {
     /// Returns the conditions that need to be verified by a [`Checker`]
     /// in order for the expression to be correct
-    fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition>>;
+    fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_>;
 
     // RFC: replace dialect with `ops` that wraps dialect as well as if this is the outer
     // expression so the aliasing shows
