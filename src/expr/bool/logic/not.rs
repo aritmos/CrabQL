@@ -13,11 +13,7 @@ pub struct NotExpr {
 impl Expression for NotExpr {
     fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_> {
         debug_assert!(matches!(coerce, ExprType::Any | ExprType::Bool));
-
-        let conds = [&self.inner]
-            .into_iter()
-            .flat_map(|e| e.conditions(ExprType::Bool));
-        Box::new(conds)
+        self.inner.conditions(ExprType::Bool)
     }
 
     fn display(&self, dialect: Dialect) -> String {
