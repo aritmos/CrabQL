@@ -1,5 +1,6 @@
 use super::Expression;
 
+mod arith;
 /// Marker trait for expressions that evaluate into boolean values
 pub trait Numeric: Expression {}
 
