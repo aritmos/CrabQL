@@ -23,8 +23,8 @@ impl Expression for Column {
     fn display(&self, dialect: Dialect) -> String {
         self.name.to_string()
     }
-
-    // fn alias(&mut self, alias: String) {
-    //     self.alias = Some(alias);
-    // }
 }
+impl Boolean for Column {}
+impl Numeric for Column {}
+impl Textual for Column {}
+impl Anything for Column {}
