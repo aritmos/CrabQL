@@ -1,6 +1,6 @@
 //! Arithmetic operators as expressions
 
-use crate::expr::prelude::*;
+use crate::expr::{any::col::Column, prelude::*};
 
 macro_rules! impl_arith_expr {
     ($struct:ident, $trait:ident, $method:ident, $display:expr) => {
@@ -33,6 +33,7 @@ macro_rules! impl_arith_expr {
                 )
             }
         }
+        impl CoreExpression for $struct {}
         impl Numeric for $struct {}
 
         pub trait $trait<R> {
@@ -107,3 +108,4 @@ impl_arith_ops!(SubExpr);
 impl_arith_ops!(MulExpr);
 impl_arith_ops!(DivExpr);
 impl_arith_ops!(RemExpr);
+impl_arith_ops!(Column);

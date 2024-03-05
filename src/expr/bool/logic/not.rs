@@ -1,5 +1,6 @@
 use crate::expr::prelude::*;
 
+#[derive(IntoMultiCore)]
 pub struct NotExpr {
     inner: Box<dyn Boolean>,
 }
@@ -20,6 +21,7 @@ impl Expression for NotExpr {
         format!("NOT {}", self.inner.display(dialect))
     }
 }
+impl CoreExpression for NotExpr {}
 impl Boolean for NotExpr {}
 super::impl_bool_logic!(NotExpr);
 

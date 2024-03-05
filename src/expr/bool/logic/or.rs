@@ -1,5 +1,6 @@
 use crate::expr::prelude::*;
 
+#[derive(IntoMultiCore)]
 pub struct OrExpr {
     lhs: Box<dyn Boolean>,
     rhs: Box<dyn Boolean>,
@@ -29,6 +30,7 @@ impl Expression for OrExpr {
         )
     }
 }
+impl CoreExpression for OrExpr {}
 impl Boolean for OrExpr {}
 super::impl_bool_logic!(OrExpr);
 

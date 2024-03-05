@@ -14,6 +14,7 @@ pub use neq::*;
 /// Arguments are ($struct, $trait, $method, $display)
 macro_rules! impl_num_cmp {
     ($struct:ident, $trait:ident, $method:ident, $display:expr) => {
+        #[derive(IntoMultiCore)]
         pub struct $struct {
             lhs: Box<dyn Numeric>,
             rhs: Box<dyn Numeric>,
@@ -38,6 +39,7 @@ macro_rules! impl_num_cmp {
                 )
             }
         }
+        impl CoreExpression for $struct {}
         impl Boolean for $struct {}
 
         // Implement `AND` and `OR` via `BitAnd` and `BitOr`
@@ -64,5 +66,5 @@ macro_rules! impl_num_cmp {
 
 impl_num_cmp!(GTExpr, GT, gt, "{} > {}");
 impl_num_cmp!(GEqExpr, GEq, geq, "{} >= {}");
-impl_num_cmp!(LtExpr, LT, lt, "{} < {}");
+impl_num_cmp!(LTExpr, LT, lt, "{} < {}");
 impl_num_cmp!(LEqExpr, LEq, leq, "{} <= {}");

@@ -1,4 +1,5 @@
-use super::{checker::Checker, expr::bool::Boolean};
+use crate::checker::Checker;
+use crate::expr::{bool::Boolean, Expression};
 
 // The query that is being built
 type Q = ();
@@ -37,8 +38,7 @@ impl<'c, C> Reader<'c, C> {
 
     /// Selects the given rows for reading, returns a `SealedReader` that cannot be internally
     /// modified further.
-    // TODO: Find out what to pass in
-    pub fn select(self /* <stuff> */) -> Result<SealedReader<T>, String> {
+    pub fn select(self, expr: impl Expression) -> Result<SealedReader<T>, String> {
         todo!()
     }
 

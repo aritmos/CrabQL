@@ -1,12 +1,11 @@
 pub mod and;
-pub use and::*;
+pub use and::AndExpr;
 
 pub mod or;
-pub use or::*;
+pub use or::OrExpr;
 
 pub mod not;
-pub use not::*;
-
+pub use not::NotExpr;
 
 /// Implement `BitAnd`, `BitOr`, and `Not` as `AND`, `OR`, and `NOT` operations respectively.
 macro_rules! impl_bool_logic {

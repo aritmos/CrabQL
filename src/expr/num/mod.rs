@@ -1,10 +1,17 @@
-use super::Expression;
+//! Expressions that evaluate into numeric values
 
-mod arith;
-mod len;
+use super::{CoreExpression, Expression};
+
+pub mod arith;
+#[doc(inline)]
+pub use arith::{Add, AddExpr, Div, DivExpr, Mul, MulExpr, Rem, RemExpr, Sub, SubExpr};
+
+pub mod len;
+#[doc(inline)]
+pub use len::{Len, LenExpr};
 
 /// Marker trait for expressions that evaluate into boolean values
-pub trait Numeric: Expression {}
+pub trait Numeric: CoreExpression {}
 
 impl Expression for i32 {
     fn conditions(
@@ -23,4 +30,5 @@ impl Expression for i32 {
         self.to_string()
     }
 }
+impl CoreExpression for i32 {}
 impl Numeric for i32 {}

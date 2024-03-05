@@ -1,15 +1,12 @@
 use super::super::prelude::*;
 
+#[derive(IntoMultiCore)]
 pub struct Column {
     name: String,
-    // alias: Option<String>,
 }
 
 pub fn col(name: impl Into<String>) -> Column {
-    Column {
-        name: name.into(),
-        // alias: None,
-    }
+    Column { name: name.into() }
 }
 
 impl Expression for Column {
@@ -24,6 +21,8 @@ impl Expression for Column {
         self.name.to_string()
     }
 }
+// impl CoreExpression for Column {}
+impl CoreExpression for Column {}
 impl Boolean for Column {}
 impl Numeric for Column {}
 impl Textual for Column {}
