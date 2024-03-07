@@ -1,5 +1,6 @@
 use crate::expr::prelude::*;
 
+#[derive(IntoMultiCore)]
 pub struct AndExpr {
     lhs: Box<dyn Boolean>,
     rhs: Box<dyn Boolean>,
@@ -29,6 +30,7 @@ impl Expression for AndExpr {
         )
     }
 }
+impl CoreExpression for AndExpr {}
 impl Boolean for AndExpr {}
 super::impl_bool_logic!(AndExpr);
 

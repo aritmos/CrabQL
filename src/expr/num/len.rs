@@ -16,9 +16,11 @@ impl Expression for LenExpr {
         }
     }
 }
+impl CoreExpression for LenExpr {}
 impl Numeric for LenExpr {}
 super::arith::impl_arith_ops!(LenExpr);
 
+#[allow(clippy::len_without_is_empty)]
 pub trait Len {
     fn len(self) -> LenExpr;
 }

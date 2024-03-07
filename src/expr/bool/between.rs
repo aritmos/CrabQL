@@ -1,5 +1,6 @@
 use crate::expr::prelude::*;
 
+#[derive(IntoMultiCore)]
 pub struct BetweenExpr {
     inner: Box<dyn Numeric>,
     lower: Box<dyn Numeric>,
@@ -26,8 +27,9 @@ impl Expression for BetweenExpr {
         )
     }
 }
+impl CoreExpression for BetweenExpr {}
 impl Boolean for BetweenExpr {}
-super::impl_bool_logic!(BetweenExpr);
+super::logic::impl_bool_logic!(BetweenExpr);
 
 pub trait Between<L, U> {
     fn between(self, lower: L, upper: U) -> BetweenExpr;

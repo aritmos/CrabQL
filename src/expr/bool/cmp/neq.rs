@@ -1,5 +1,6 @@
 use crate::expr::prelude::*;
 
+#[derive(IntoMultiCore)]
 pub struct NEqExpr {
     // `dyn Expression` as we can have equality for `(num, num)`, `(text, text)` etc
     lhs: Box<dyn Expression>,
@@ -27,6 +28,7 @@ impl Expression for NEqExpr {
         )
     }
 }
+impl CoreExpression for NEqExpr {}
 impl Boolean for NEqExpr {}
 super::super::logic::impl_bool_logic!(NEqExpr);
 

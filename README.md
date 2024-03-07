@@ -47,7 +47,11 @@ let query = {
             .filter(col("category").neq("old") & col("completed"))
             .select_as("cost_by_month", {
                 let month = col("created_date").to_char("YYYY-MM"); 
-                [ col("campaign_id").as("campaign"), month, col("cost").sum().as("monthly_cost") ]
+                multi![
+                    col("campaign_id").as("campaign"),
+                    month,
+                    col("cost").sum().as("monthly_cost")
+                ]
             }).unwrap(); 
 
         
@@ -55,9 +59,7 @@ let query = {
             .unseal(&mut checker)
             .group_by("campaign") 
             .order_by("campaign")
-            .select({
-                [col("campaign"), col("monthly_cost").avg().as("avg cost")]
-            })
+            .select(() << col("campaign") << col("monthly_cost").avg().as("avg cost"))
             .unwrap()
             .to_sql()
     }
@@ -162,13 +164,13 @@ let mut checker = DerivedChecker::new(); // internally uses a `DerivedSchema`
 // The checker infers that the <likes> column is numeric.
 let view1 = Reader::new(&mut checker)
     .table("post_likes")
-    .select([col("post_id"), col("likes") + 1]) 
+    .select(() << col("post_id") << (col("likes") + 1)) 
     .unwrap();
 
 // The checker will throw an error when sealing the query because <likes> column is numeric but string concatenation requires a string.
 let view2 = Reader::new(&mut checker)
     .table("post_likes")
-    .select(|v| [v["post_id"], v["likes"] + "text"]) 
+    .select(() << col("post_id") << (col("likes") + "text")) 
 ```
 
 Although the error is imediately found when an expression is used in a method, in order to allow for better type ergonomics, it is not exposed to the user until the entire query is sealed (finished)
