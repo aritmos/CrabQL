@@ -1,12 +1,31 @@
-/// Rust to Intermediate Representation
-pub mod rs2ir;
+#![allow(unused)]
+#![feature(trait_upcasting)]
 
-/// Intermediate Representation to Rust
-pub mod ir2sql;
+pub mod expr;
 
-/// SQL to Intermediate Representation
-pub mod sql2ir;
+/// Create SQL Expressions
+pub mod reader;
 
-pub mod prelude {
-    pub use crate::rs2ir::funcs::Functions;
-}
+/// Query Verification
+pub mod checker;
+
+/// Experimental Testing
+pub mod testing;
+
+/// Schemas
+pub mod schema;
+
+// #[cfg(test)]
+// mod tests {
+//     use super::super::{checker::DerivedChecker, expr::funcs::Mappings};
+//     use super::*; // Required for things to be in scope
+//
+//     #[test]
+//     fn reader_syntax() {
+//         let mut checker = DerivedChecker::new();
+//         let _x = Reader::<'_, _, usize, usize>::new(&mut checker)
+//             .table("emp")
+//             .filter(|t| t["id"].gt(3_usize) & t["name"].len().gt(10_usize))
+//             .select(|t| [t["id"], t["name"]]);
+//     }
+// }
