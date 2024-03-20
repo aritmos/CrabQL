@@ -10,3 +10,5 @@ pub trait Anything: CoreExpression + Textual + Boolean + Numeric {}
 pub mod col;
 #[doc(inline)]
 pub use col::{col, Column};
+
+pub mod case;
