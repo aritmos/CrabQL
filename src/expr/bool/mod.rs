@@ -29,3 +29,5 @@ pub use logic::{AndExpr, NotExpr, OrExpr};
 pub mod between;
 #[doc(inline)]
 pub use between::{Between, BetweenExpr};
+
+pub mod lit;
