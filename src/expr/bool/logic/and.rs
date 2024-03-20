@@ -30,7 +30,11 @@ impl Expression for AndExpr {
         )
     }
 }
-impl CoreExpression for AndExpr {}
+impl CoreExpression for AndExpr {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
+    }
+}
 impl Boolean for AndExpr {}
 super::impl_bool_logic!(AndExpr);
 

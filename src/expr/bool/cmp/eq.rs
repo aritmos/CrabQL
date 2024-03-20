@@ -28,7 +28,11 @@ impl Expression for EqExpr {
         )
     }
 }
-impl CoreExpression for EqExpr {}
+impl CoreExpression for EqExpr {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
+    }
+}
 impl Boolean for EqExpr {}
 super::super::logic::impl_bool_logic!(EqExpr);
 

@@ -30,5 +30,9 @@ impl Expression for i32 {
         self.to_string()
     }
 }
-impl CoreExpression for i32 {}
+impl CoreExpression for i32 {
+    fn eval_type(&self) -> super::ExprType {
+        super::ExprType::Num
+    }
+}
 impl Numeric for i32 {}

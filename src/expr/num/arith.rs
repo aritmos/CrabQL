@@ -33,7 +33,11 @@ macro_rules! impl_arith_expr {
                 )
             }
         }
-        impl CoreExpression for $struct {}
+        impl CoreExpression for $struct {
+            fn eval_type(&self) -> ExprType {
+                ExprType::Num
+            }
+        }
         impl Numeric for $struct {}
 
         pub trait $trait<R> {

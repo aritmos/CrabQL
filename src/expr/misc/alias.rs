@@ -16,4 +16,8 @@ impl Expression for AliasExpr {
         format!("{} AS {}", self.inner.display(dialect), self.alias)
     }
 }
-impl CoreExpression for AliasExpr {}
+impl CoreExpression for AliasExpr {
+    fn eval_type(&self) -> ExprType {
+        self.inner.eval_type()
+    }
+}

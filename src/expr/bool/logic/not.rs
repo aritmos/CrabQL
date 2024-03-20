@@ -21,7 +21,11 @@ impl Expression for NotExpr {
         format!("NOT {}", self.inner.display(dialect))
     }
 }
-impl CoreExpression for NotExpr {}
+impl CoreExpression for NotExpr {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
+    }
+}
 impl Boolean for NotExpr {}
 super::impl_bool_logic!(NotExpr);
 

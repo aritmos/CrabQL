@@ -22,7 +22,11 @@ impl Expression for Column {
     }
 }
 // impl CoreExpression for Column {}
-impl CoreExpression for Column {}
+impl CoreExpression for Column {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Any
+    }
+}
 impl Boolean for Column {}
 impl Numeric for Column {}
 impl Textual for Column {}

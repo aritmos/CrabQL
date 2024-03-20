@@ -12,7 +12,7 @@ mod prelude;
 use super::checker::Condition;
 
 /// The possible evaluation types of an expression.
-#[derive(PartialEq, Eq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ExprType {
     /// Expressions that can return any other return type in this enum.
     /// It exists as a "nullop" within coercion environments.
@@ -56,17 +56,22 @@ pub trait Expression {
 // use the anti-trait pattern: `!BasicExpression` to refer to custom expressions
 
 /// Expressions that evaluate into DB primitive types
-pub trait CoreExpression: Expression {}
+pub trait CoreExpression: Expression {
+    /// The evaluation type of the expression.
+    ///
+    /// Note: Requires `&self` so the trait remains object safe.
+    fn eval_type(&self) -> ExprType;
+}
 /// Expressions that do not evaluate into DB primitive types
 pub trait MiscExpression: Expression {}
 
 // Boxed expressions are expressions
-impl Expression for Box<dyn Expression> {
-    fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_> {
-        self.as_ref().conditions(coerce)
-    }
-
-    fn display(&self, dialect: Dialect) -> String {
-        self.as_ref().display(dialect)
-    }
-}
+// impl Expression for Box<dyn Expression> {
+//     fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_> {
+//         self.as_ref().conditions(coerce)
+//     }
+//
+//     fn display(&self, dialect: Dialect) -> String {
+//         self.as_ref().display(dialect)
+//     }
+// }

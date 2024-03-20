@@ -30,7 +30,11 @@ impl Expression for OrExpr {
         )
     }
 }
-impl CoreExpression for OrExpr {}
+impl CoreExpression for OrExpr {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
+    }
+}
 impl Boolean for OrExpr {}
 super::impl_bool_logic!(OrExpr);
 

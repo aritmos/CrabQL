@@ -28,7 +28,11 @@ impl Expression for NEqExpr {
         )
     }
 }
-impl CoreExpression for NEqExpr {}
+impl CoreExpression for NEqExpr {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
+    }
+}
 impl Boolean for NEqExpr {}
 super::super::logic::impl_bool_logic!(NEqExpr);
 

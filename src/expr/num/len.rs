@@ -16,7 +16,11 @@ impl Expression for LenExpr {
         }
     }
 }
-impl CoreExpression for LenExpr {}
+impl CoreExpression for LenExpr {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Num
+    }
+}
 impl Numeric for LenExpr {}
 super::arith::impl_arith_ops!(LenExpr);
 

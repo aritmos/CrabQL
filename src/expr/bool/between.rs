@@ -27,7 +27,11 @@ impl Expression for BetweenExpr {
         )
     }
 }
-impl CoreExpression for BetweenExpr {}
+impl CoreExpression for BetweenExpr {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
+    }
+}
 impl Boolean for BetweenExpr {}
 super::logic::impl_bool_logic!(BetweenExpr);
 

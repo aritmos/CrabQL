@@ -39,7 +39,11 @@ macro_rules! impl_num_cmp {
                 )
             }
         }
-        impl CoreExpression for $struct {}
+        impl CoreExpression for $struct {
+            fn eval_type(&self) -> ExprType {
+                ExprType::Bool
+            }
+        }
         impl Boolean for $struct {}
 
         // Implement `AND` and `OR` via `BitAnd` and `BitOr`
