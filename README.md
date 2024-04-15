@@ -1,23 +1,23 @@
 <img width="100%" src="./assets/banner.svg">
 
-## ✨ Features
+## ✨ Features ✨
 
 `CrabQL` allows you to generate SQL queries that are
-### Natural
+- 🌿 **Natural**:
 
-- No string parsing. Use proper types that compose into expressions
+  Write like Rust. No string parsing. Use proper composable types everywhere.
+- 🚑 **Type Safe**:
 
-### Type Safe
+  Query building is type-safe by construction; operations can only be generally used in correct contexts and internal representations are validated during a query's compilation.
+- 📏 **Flat**:
 
-- Query building is type-safe by construction; operations can only be generally used in correct contexts and internal representations are validated during a query's compilation. 
+  Traditionally nested queries can be created in a single chained expression.
+- 📋 **Schema Validated**:
 
-### Schema Validated
+  Schemas can be used to additionally validate every table/column access and operations alongside with any other state-reliant operation.  
+- 🤝 **Transactionally Safe**:
 
-- Schemas can be used to additionally validate every table/column access and operations alongside with any other state-reliant operation.  
-
-### Transactionally Safe
-
-- Queries that depend on each other can only be generated as a single multi-query. This ensures any required ordering when executing the queries.
+  Queries that depend on each other can only be generated as a single multi-query. This ensures any required ordering when executing the queries.
 
 ## 🚧 CAUTION: W.I.P.
 - `CrabQL` is still in very early stages of production. There is still much work to do in the foundational back-end. Come back in a couple weeks/months to see what was implemented!
@@ -33,36 +33,31 @@ The current (partially implemented) use case is as follows:
 let query = {
     let checker: ExprChecker::from_schema("schema.sql").unwrap();
     let reader: Reader = Reader::new(&mut checker);
-
-    let monthly_cost: SQLQuery = {
-        let monthly_cost: SealedReader = reader
-            .table("marketing")
-            .new_col("category", { 
-                case!{                
-                    col("created_date").lt(Date::new("2020-04-01")) => "pre-pandemic",
-                    col("created_date").lt(Date::new("2024-01-01")) => "last year",
-                    _ => "recent",
-                } 
-            }) 
-            .filter(col("category").neq("old") & col("completed"))
-            .select_as("cost_by_month", {
-                let month = col("created_date").to_char("YYYY-MM"); 
-                multi![
-                    col("campaign_id").as("campaign"),
-                    month,
-                    col("cost").sum().as("monthly_cost")
-                ]
-            }).unwrap(); 
-
-        
-        monthly_cost
-            .unseal(&mut checker)
-            .group_by("campaign") 
-            .order_by("campaign")
-            .select(() << col("campaign") << col("monthly_cost").avg().as("avg cost"))
-            .unwrap()
-            .to_sql()
-    }
+    
+    reader
+        .table("marketing")
+        .new_col("category", { 
+            case!{                
+                col("created_date").lt(Date::new("2020-04-01")) => "pre-pandemic",
+                col("created_date").lt(Date::new("2024-01-01")) => "last year",
+                _ => "recent",
+            } 
+        }) 
+        .filter(col("category").neq("old") & col("completed"))
+        .save_as("cost_by_month", {
+            let month = col("created_date").to_char("YYYY-MM"); 
+            multi![
+                col("campaign_id").as("campaign"),
+                month,
+                col("cost").sum().as("monthly_cost")
+            ]
+        })
+        .table("cost_by_month")
+        .group_by("campaign") 
+        .order_by("campaign")
+        .select(() << col("campaign") << col("monthly_cost").avg().as("avg cost"))
+        .unwrap()
+        .to_sql()
 });
 
 println!("{}", query);
