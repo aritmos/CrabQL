@@ -1,33 +1,40 @@
 //! Expressions that evaluate into boolean values
 
-use super::CoreExpression;
+use crate::expr::prelude::*;
 
-/// Marker trait for expressions that evaluate into boolean values
-pub trait Boolean: CoreExpression {}
+/// Common expressions that evaluate into boolean values.
+pub trait Boolean: Common {
+    fn eq<R>(self, rhs: R) -> CommonExpr<Eq>
+    where
+        Self: Sized + 'static,
+        R: Boolean + 'static,
+    {
+        CommonExpr(Eq::new(Box::new(self), Box::new(rhs), ExprType::Bool))
+    }
+
+    fn neq<R>(self, rhs: R) -> CommonExpr<Neq>
+    where
+        Self: Sized + 'static,
+        R: Boolean + 'static,
+    {
+        CommonExpr(Neq::new(Box::new(self), Box::new(rhs), ExprType::Bool))
+    }
+}
+impl<T: Boolean> Boolean for CommonExpr<T> {}
 
 /// Comparison expressions
 pub mod cmp;
 #[doc(inline)]
-pub use cmp::{AnyEq, BoolEq, EqExpr, NumNEq, TextNEq};
-#[doc(inline)]
-pub use cmp::{AnyNEq, BoolNEq, NEqExpr, NumEq, TextEq};
-#[doc(inline)]
-pub use cmp::{GEq, GEqExpr};
-#[doc(inline)]
-pub use cmp::{GTExpr, GT};
-#[doc(inline)]
-pub use cmp::{LEq, LEqExpr};
-#[doc(inline)]
-pub use cmp::{LTExpr, LT};
+pub use cmp::{Eq, Geq, Gt, Leq, Lt, Neq};
 
 /// Logical operator expressions
 #[macro_use]
 pub mod logic;
 #[doc(inline)]
-pub use logic::{AndExpr, NotExpr, OrExpr};
+pub use logic::{And, Not, Or};
 
 pub mod between;
 #[doc(inline)]
-pub use between::{Between, BetweenExpr};
+pub use between::Between;
 
 pub mod lit;

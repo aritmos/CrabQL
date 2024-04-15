@@ -1,15 +1,24 @@
 /// Standard conditions for a checker
-mod cond;
-pub use cond::Condition;
+mod message;
+pub use message::{Condition, Message, Signal};
 
+use crate::expr::ExprType;
+use crate::protocol::{Client, Server, ServerHandler};
 use crate::schema::{CompiledSchema, DerivedSchema};
 
-pub type CheckOk = ();
-pub enum CheckErr {}
-pub type CheckResult = Result<CheckOk, CheckErr>;
+pub type Context = ExprType;
+
+/// A type that can check `Checkable` types.
+pub trait Checker: ServerHandler + Server<Msg = Message> {}
+
+/// A type that can be checked by a `Checker`.
+pub trait Checkable: Client<Ctx = Context, Msg = Message> {}
+
+// === Concrete Impls ===
 
 pub struct CompiledChecker<'s> {
     schema: &'s CompiledSchema,
+    state: (),
     // another field should go here to track user additions
     // TODO
 }
@@ -17,54 +26,50 @@ pub struct CompiledChecker<'s> {
 #[derive(Default)]
 pub struct DerivedChecker {
     schema: DerivedSchema,
+    state: (),
 }
 
 impl DerivedChecker {
     pub fn new() -> Self {
         Self {
             schema: DerivedSchema::new(),
+            state: (),
         }
     }
 }
 
-/// Used to check and merge expressions.
-pub trait Checker {
-    type Cond;
-    type Ctx;
+impl Server for DerivedChecker {
+    type Msg = Message;
 
-    fn validate(
-        &mut self,
-        ctx: &Self::Ctx,
-        conditions: Box<dyn Iterator<Item = Self::Cond>>,
-    ) -> CheckResult;
-}
-
-impl Checker for DerivedChecker {
-    type Cond = cond::Condition;
-
-    // TODO: Update when context is implemented
-    type Ctx = ();
-
-    fn validate(
-        &mut self,
-        ctx: &Self::Ctx,
-        conditions: Box<dyn Iterator<Item = Self::Cond>>,
-    ) -> CheckResult {
+    fn accept(&mut self, msg: Self::Msg) {
         todo!()
     }
 }
+impl ServerHandler for DerivedChecker {
+    fn state(&self) -> Result<(), ()> {
+        todo!()
+    }
 
-impl<'s> Checker for CompiledChecker<'s> {
-    type Cond = cond::Condition;
-
-    // TODO: Update when context is implemented
-    type Ctx = ();
-
-    fn validate(
-        &mut self,
-        ctx: &Self::Ctx,
-        conditions: Box<dyn Iterator<Item = Self::Cond>>,
-    ) -> CheckResult {
+    fn reset(&mut self) {
         todo!()
     }
 }
+impl Checker for DerivedChecker {}
+
+impl<'s> Server for CompiledChecker<'s> {
+    type Msg = Message;
+
+    fn accept(&mut self, msg: Self::Msg) {
+        todo!()
+    }
+}
+impl<'s> ServerHandler for CompiledChecker<'s> {
+    fn state(&self) -> Result<(), ()> {
+        todo!()
+    }
+
+    fn reset(&mut self) {
+        todo!()
+    }
+}
+impl<'s> Checker for CompiledChecker<'s> {}

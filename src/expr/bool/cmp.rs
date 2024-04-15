@@ -13,22 +13,40 @@ pub use neq::*;
 ///
 /// Arguments are ($struct, $trait, $method, $display)
 macro_rules! impl_num_cmp {
-    ($struct:ident, $trait:ident, $method:ident, $display:expr) => {
-        #[derive(IntoMultiCore)]
+    ($struct:ident, $display:expr) => {
         pub struct $struct {
-            lhs: Box<dyn Numeric>,
-            rhs: Box<dyn Numeric>,
+            lhs: Box<dyn Expression>, // Numeric
+            rhs: Box<dyn Expression>, // Numeric
         }
 
+        impl $struct {
+            pub fn new(lhs: Box<dyn Expression>, rhs: Box<dyn Expression>) -> Self {
+                Self { lhs, rhs }
+            }
+        }
+
+        impl Client for $struct {
+            type Ctx = ExprType;
+            type Msg = Message;
+
+            fn children(
+                &self,
+                ctx: Self::Ctx,
+            ) -> Vec<(&dyn Client<Ctx = Self::Ctx, Msg = Self::Msg>, Self::Ctx)> {
+                vec![
+                    (self.lhs.as_ref(), ExprType::Num),
+                    (self.rhs.as_ref(), ExprType::Num),
+                ]
+            }
+
+            fn messages(&self, ctx: Self::Ctx) -> Vec<Self::Msg> {
+                Vec::new()
+            }
+        }
+        impl Checkable for $struct {}
         impl Expression for $struct {
-            fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_> {
-                debug_assert!(matches!(coerce, ExprType::Any | ExprType::Bool));
-
-                let conds = [&self.lhs, &self.rhs]
-                    .into_iter()
-                    .flat_map(|e| e.conditions(ExprType::Num));
-
-                Box::new(conds)
+            fn eval_type(&self) -> ExprType {
+                ExprType::Bool
             }
 
             fn display(&self, dialect: Dialect) -> String {
@@ -39,36 +57,12 @@ macro_rules! impl_num_cmp {
                 )
             }
         }
-        impl CoreExpression for $struct {
-            fn eval_type(&self) -> ExprType {
-                ExprType::Bool
-            }
-        }
+        impl Common for $struct {}
         impl Boolean for $struct {}
-
-        // Implement `AND` and `OR` via `BitAnd` and `BitOr`
-        super::logic::impl_bool_logic!($struct);
-
-        pub trait $trait<R> {
-            fn $method(self, rhs: R) -> $struct;
-        }
-
-        impl<L, R> $trait<R> for L
-        where
-            L: Numeric + 'static,
-            R: Numeric + 'static,
-        {
-            fn $method(self, rhs: R) -> $struct {
-                $struct {
-                    lhs: Box::new(self),
-                    rhs: Box::new(rhs),
-                }
-            }
-        }
     };
 }
 
-impl_num_cmp!(GTExpr, GT, gt, "{} > {}");
-impl_num_cmp!(GEqExpr, GEq, geq, "{} >= {}");
-impl_num_cmp!(LTExpr, LT, lt, "{} < {}");
-impl_num_cmp!(LEqExpr, LEq, leq, "{} <= {}");
+impl_num_cmp!(Gt, "{} > {}");
+impl_num_cmp!(Geq, "{} >= {}");
+impl_num_cmp!(Lt, "{} < {}");
+impl_num_cmp!(Leq, "{} <= {}");

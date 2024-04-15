@@ -1,5 +1,5 @@
 use crate::checker::Checker;
-use crate::expr::{bool::Boolean, Expression};
+use crate::expr::{bool::Boolean, CommonExpr, Expression};
 
 // The query that is being built
 type Q = ();
@@ -49,14 +49,7 @@ impl<'c, C> Reader<'c, C> {
     }
 
     /// Filters the rows in the current table
-    pub fn filter(self, bool_expr: impl Boolean + 'static) -> Self {
-        // for ergonomic purposes accept any Boolean
-        // encapsulate the common behaviour in another function
-        // as to minimise code duplication
-        self.__filter(Box::new(bool_expr))
-    }
-
-    fn __filter(self, bool_expr: Box<dyn Boolean>) -> Self {
+    pub fn filter<T: Boolean>(self, bool_expr: CommonExpr<T>) -> Self {
         todo!()
     }
 }

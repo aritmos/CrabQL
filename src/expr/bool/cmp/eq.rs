@@ -1,23 +1,55 @@
 use crate::expr::prelude::*;
 
-#[derive(IntoMultiCore)]
-pub struct EqExpr {
-    // `dyn Expression` as we can have equality for `(num, num)`, `(text, text)` etc
+/// An equality operation.
+/// This struct is common to all equality operations regardless of the CommonType.
+/// Instead the CommonType is stored internally.
+pub struct Eq {
     lhs: Box<dyn Expression>,
     rhs: Box<dyn Expression>,
-    // keep track of the inner expression types
     kind: ExprType,
 }
 
-impl Expression for EqExpr {
-    fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_> {
-        debug_assert!(matches!(coerce, ExprType::Any | ExprType::Bool));
+impl Eq {
+    pub fn new(lhs: Box<dyn Expression>, rhs: Box<dyn Expression>, kind: ExprType) -> Self {
+        Self { lhs, rhs, kind }
+    }
+}
+impl Client for Eq {
+    type Ctx = ExprType;
+    type Msg = Message;
 
-        let conds = [&self.lhs, &self.rhs]
-            .into_iter()
-            .flat_map(|e| e.conditions(self.kind));
+    fn children(
+        &self,
+        ctx: Self::Ctx,
+    ) -> Vec<(&dyn Client<Ctx = Self::Ctx, Msg = Self::Msg>, Self::Ctx)> {
+        vec![
+            (self.lhs.as_ref(), self.kind),
+            (self.rhs.as_ref(), self.kind),
+        ]
+    }
 
-        Box::new(conds)
+    fn messages(&self, ctx: Self::Ctx) -> Vec<Self::Msg> {
+        unreachable!();
+    }
+
+    fn send_all(&self, ctx: Self::Ctx, server: &mut dyn Server<Msg = Self::Msg>) {
+        if self.kind == ExprType::Any {
+            server.accept(Signal::StartLink.into());
+            for (child, ctx) in self.children(ctx) {
+                child.send_all(ctx, server);
+            }
+            server.accept(Signal::EndLink.into());
+        } else {
+            for (child, ctx) in self.children(ctx) {
+                child.send_all(ctx, server);
+            }
+        }
+    }
+}
+impl Checkable for Eq {}
+impl Expression for Eq {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
     }
 
     fn display(&self, dialect: Dialect) -> String {
@@ -28,82 +60,5 @@ impl Expression for EqExpr {
         )
     }
 }
-impl CoreExpression for EqExpr {
-    fn eval_type(&self) -> ExprType {
-        ExprType::Bool
-    }
-}
-impl Boolean for EqExpr {}
-super::super::logic::impl_bool_logic!(EqExpr);
-
-pub trait NumEq<R> {
-    fn eq(self, rhs: R) -> EqExpr;
-}
-
-impl<L, R> NumEq<R> for L
-where
-    L: Numeric + 'static,
-    R: Numeric + 'static,
-{
-    fn eq(self, rhs: R) -> EqExpr {
-        EqExpr {
-            lhs: Box::new(self),
-            rhs: Box::new(rhs),
-            kind: ExprType::Num,
-        }
-    }
-}
-
-pub trait TextEq<R> {
-    fn eq(self, rhs: R) -> EqExpr;
-}
-
-impl<L, R> TextEq<R> for L
-where
-    L: Textual + 'static,
-    R: Textual + 'static,
-{
-    fn eq(self, rhs: R) -> EqExpr {
-        EqExpr {
-            lhs: Box::new(self),
-            rhs: Box::new(rhs),
-            kind: ExprType::Text,
-        }
-    }
-}
-
-pub trait BoolEq<R> {
-    fn eq(self, rhs: R) -> EqExpr;
-}
-
-impl<L, R> BoolEq<R> for L
-where
-    L: Boolean + 'static,
-    R: Boolean + 'static,
-{
-    fn eq(self, rhs: R) -> EqExpr {
-        EqExpr {
-            lhs: Box::new(self),
-            rhs: Box::new(rhs),
-            kind: ExprType::Bool,
-        }
-    }
-}
-
-pub trait AnyEq<R> {
-    fn eq(self, rhs: R) -> EqExpr;
-}
-
-impl<L, R> AnyEq<R> for L
-where
-    L: Anything + 'static,
-    R: Anything + 'static,
-{
-    fn eq(self, rhs: R) -> EqExpr {
-        EqExpr {
-            lhs: Box::new(self),
-            rhs: Box::new(rhs),
-            kind: ExprType::Any,
-        }
-    }
-}
+impl Common for Eq {}
+impl Boolean for Eq {}

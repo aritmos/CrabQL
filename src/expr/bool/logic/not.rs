@@ -1,45 +1,41 @@
 use crate::expr::prelude::*;
 
-#[derive(IntoMultiCore)]
-pub struct NotExpr {
-    inner: Box<dyn Boolean>,
+pub struct Not {
+    inner: Box<dyn Expression>, // Boolean
 }
 
-// impl NotExpr {
-//     pub fn new(lhs: Box<dyn Boolean>, rhs: Box<dyn Boolean>) -> Self {
-//         Self { lhs, rhs }
-//     }
-// }
+impl Not {
+    pub fn new(inner: Box<dyn Expression>) -> Self {
+        Self { inner }
+    }
+}
 
-impl Expression for NotExpr {
-    fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_> {
-        debug_assert!(matches!(coerce, ExprType::Any | ExprType::Bool));
-        self.inner.conditions(ExprType::Bool)
+impl Client for Not {
+    type Ctx = ExprType;
+    type Msg = Message;
+
+    fn children(
+        &self,
+        ctx: Self::Ctx,
+    ) -> Vec<(&dyn Client<Ctx = Self::Ctx, Msg = Self::Msg>, Self::Ctx)> {
+        debug_assert!(matches!(ctx, ExprType::Any | ExprType::Bool));
+        vec![(self.inner.as_ref(), ExprType::Bool)]
     }
 
+    fn messages(&self, ctx: Self::Ctx) -> Vec<Self::Msg> {
+        Vec::new()
+    }
+}
+impl Checkable for Not {}
+impl Expression for Not {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
+    }
+
+    // TODO: Account for "IS NOT NULL" for `IS`-type of expressions
     fn display(&self, dialect: Dialect) -> String {
         format!("NOT {}", self.inner.display(dialect))
     }
 }
-impl CoreExpression for NotExpr {
-    fn eval_type(&self) -> ExprType {
-        ExprType::Bool
-    }
-}
-impl Boolean for NotExpr {}
-super::impl_bool_logic!(NotExpr);
-
-pub trait Not {
-    fn not(self) -> NotExpr;
-}
-
-impl<L> Not for L
-where
-    L: Boolean + 'static,
-{
-    fn not(self) -> NotExpr {
-        NotExpr {
-            inner: Box::new(self),
-        }
-    }
-}
+impl Common for Not {}
+impl Boolean for Not {}
