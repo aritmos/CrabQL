@@ -1,7 +1,6 @@
 use crate::expr::prelude::*;
 
-#[derive(IntoMultiCore)]
-pub struct NEqExpr {
+pub struct Neq {
     // `dyn Expression` as we can have equality for `(num, num)`, `(text, text)` etc
     lhs: Box<dyn Expression>,
     rhs: Box<dyn Expression>,
@@ -9,15 +8,34 @@ pub struct NEqExpr {
     kind: ExprType,
 }
 
-impl Expression for NEqExpr {
-    fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_> {
-        debug_assert!(matches!(coerce, ExprType::Any | ExprType::Bool));
+impl Neq {
+    pub fn new(lhs: Box<dyn Expression>, rhs: Box<dyn Expression>, kind: ExprType) -> Self {
+        Self { lhs, rhs, kind }
+    }
+}
 
-        let conds = [&self.lhs, &self.rhs]
-            .into_iter()
-            .flat_map(|e| e.conditions(self.kind));
+impl Client for Neq {
+    type Ctx = ExprType;
+    type Msg = Message;
 
-        Box::new(conds)
+    fn children(
+        &self,
+        ctx: Self::Ctx,
+    ) -> Vec<(&dyn Client<Ctx = Self::Ctx, Msg = Self::Msg>, Self::Ctx)> {
+        vec![
+            (self.lhs.as_ref(), self.kind),
+            (self.rhs.as_ref(), self.kind),
+        ]
+    }
+
+    fn messages(&self, ctx: Self::Ctx) -> Vec<Self::Msg> {
+        Vec::new()
+    }
+}
+impl Checkable for Neq {}
+impl Expression for Neq {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
     }
 
     fn display(&self, dialect: Dialect) -> String {
@@ -28,78 +46,5 @@ impl Expression for NEqExpr {
         )
     }
 }
-impl CoreExpression for NEqExpr {}
-impl Boolean for NEqExpr {}
-super::super::logic::impl_bool_logic!(NEqExpr);
-
-pub trait NumNEq<R> {
-    fn neq(self, rhs: R) -> NEqExpr;
-}
-
-impl<L, R> NumNEq<R> for L
-where
-    L: Numeric + 'static,
-    R: Numeric + 'static,
-{
-    fn neq(self, rhs: R) -> NEqExpr {
-        NEqExpr {
-            lhs: Box::new(self),
-            rhs: Box::new(rhs),
-            kind: ExprType::Num,
-        }
-    }
-}
-
-pub trait TextNEq<R> {
-    fn neq(self, rhs: R) -> NEqExpr;
-}
-
-impl<L, R> TextNEq<R> for L
-where
-    L: Textual + 'static,
-    R: Textual + 'static,
-{
-    fn neq(self, rhs: R) -> NEqExpr {
-        NEqExpr {
-            lhs: Box::new(self),
-            rhs: Box::new(rhs),
-            kind: ExprType::Text,
-        }
-    }
-}
-
-pub trait BoolNEq<R> {
-    fn neq(self, rhs: R) -> NEqExpr;
-}
-
-impl<L, R> BoolNEq<R> for L
-where
-    L: Boolean + 'static,
-    R: Boolean + 'static,
-{
-    fn neq(self, rhs: R) -> NEqExpr {
-        NEqExpr {
-            lhs: Box::new(self),
-            rhs: Box::new(rhs),
-            kind: ExprType::Bool,
-        }
-    }
-}
-
-pub trait AnyNEq<R> {
-    fn neq(self, rhs: R) -> NEqExpr;
-}
-
-impl<L, R> AnyNEq<R> for L
-where
-    L: Anything + 'static,
-    R: Anything + 'static,
-{
-    fn neq(self, rhs: R) -> NEqExpr {
-        NEqExpr {
-            lhs: Box::new(self),
-            rhs: Box::new(rhs),
-            kind: ExprType::Any,
-        }
-    }
-}
+impl Common for Neq {}
+impl Boolean for Neq {}

@@ -1,13 +1,35 @@
 use crate::expr::prelude::*;
 
-pub struct LenExpr {
-    inner: Box<dyn Textual>,
+pub struct Len {
+    inner: Box<dyn Expression>, // Textual
 }
 
-impl Expression for LenExpr {
-    fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_> {
-        debug_assert!(matches!(coerce, ExprType::Any | ExprType::Num));
-        self.inner.conditions(ExprType::Text)
+impl Len {
+    pub fn new(inner: Box<dyn Expression>) -> Self {
+        Self { inner }
+    }
+}
+
+impl Client for Len {
+    type Ctx = ExprType;
+    type Msg = Message;
+
+    fn children(
+        &self,
+        ctx: Self::Ctx,
+    ) -> Vec<(&dyn Client<Ctx = Self::Ctx, Msg = Self::Msg>, Self::Ctx)> {
+        debug_assert!(matches!(ctx, ExprType::Any | ExprType::Num));
+        vec![(self.inner.as_ref(), ExprType::Text)]
+    }
+
+    fn messages(&self, ctx: Self::Ctx) -> Vec<Self::Msg> {
+        Vec::new()
+    }
+}
+impl Checkable for Len {}
+impl Expression for Len {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Num
     }
 
     fn display(&self, dialect: Dialect) -> String {
@@ -16,19 +38,5 @@ impl Expression for LenExpr {
         }
     }
 }
-impl CoreExpression for LenExpr {}
-impl Numeric for LenExpr {}
-super::arith::impl_arith_ops!(LenExpr);
-
-#[allow(clippy::len_without_is_empty)]
-pub trait Len {
-    fn len(self) -> LenExpr;
-}
-
-impl<T: Textual + 'static> Len for T {
-    fn len(self) -> LenExpr {
-        LenExpr {
-            inner: Box::new(self),
-        }
-    }
-}
+impl Common for Len {}
+impl Numeric for Len {}

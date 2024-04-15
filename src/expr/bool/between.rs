@@ -1,21 +1,48 @@
 use crate::expr::prelude::*;
 
-#[derive(IntoMultiCore)]
-pub struct BetweenExpr {
-    inner: Box<dyn Numeric>,
-    lower: Box<dyn Numeric>,
-    upper: Box<dyn Numeric>,
+pub struct Between {
+    inner: Box<dyn Expression>, // Numeric
+    lower: Box<dyn Expression>, // Numeric
+    upper: Box<dyn Expression>, // Numeric
 }
 
-impl Expression for BetweenExpr {
-    fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_> {
-        debug_assert!(matches!(coerce, ExprType::Any | ExprType::Num));
+impl Between {
+    pub fn new(
+        inner: Box<dyn Expression>,
+        lower: Box<dyn Expression>,
+        upper: Box<dyn Expression>,
+    ) -> Self {
+        Self {
+            inner,
+            lower,
+            upper,
+        }
+    }
+}
 
-        let conds = [&self.inner, &self.lower, &self.upper]
-            .into_iter()
-            .flat_map(|e| e.conditions(ExprType::Num));
+impl Client for Between {
+    type Ctx = ExprType;
+    type Msg = Message;
 
-        Box::new(conds)
+    fn children(
+        &self,
+        ctx: Self::Ctx,
+    ) -> Vec<(&dyn Client<Ctx = Self::Ctx, Msg = Self::Msg>, Self::Ctx)> {
+        vec![
+            (self.inner.as_ref(), ExprType::Num),
+            (self.lower.as_ref(), ExprType::Num),
+            (self.upper.as_ref(), ExprType::Num),
+        ]
+    }
+
+    fn messages(&self, ctx: Self::Ctx) -> Vec<Self::Msg> {
+        todo!()
+    }
+}
+impl Checkable for Between {}
+impl Expression for Between {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
     }
 
     fn display(&self, dialect: Dialect) -> String {
@@ -27,36 +54,5 @@ impl Expression for BetweenExpr {
         )
     }
 }
-impl CoreExpression for BetweenExpr {}
-impl Boolean for BetweenExpr {}
-super::logic::impl_bool_logic!(BetweenExpr);
-
-pub trait Between<L, U> {
-    fn between(self, lower: L, upper: U) -> BetweenExpr;
-}
-
-impl<T, L, U> Between<L, U> for T
-where
-    T: Numeric + 'static,
-    L: Numeric + 'static,
-    U: Numeric + 'static,
-{
-    fn between(self, lower: L, upper: U) -> BetweenExpr {
-        BetweenExpr {
-            inner: Box::new(self),
-            lower: Box::new(lower),
-            upper: Box::new(upper),
-        }
-    }
-}
-
-/// A trait like [`Between`] but allowing for ranges to be used
-pub trait Within: Between<i32, i32> {
-    fn within(self, range: std::ops::RangeInclusive<i32>) -> BetweenExpr
-    where
-        Self: Sized,
-    {
-        let (lower, upper) = range.into_inner();
-        self.between(lower, upper)
-    }
-}
+impl Common for Between {}
+impl Boolean for Between {}

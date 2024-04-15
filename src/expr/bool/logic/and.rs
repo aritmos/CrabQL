@@ -1,25 +1,39 @@
 use crate::expr::prelude::*;
 
-#[derive(IntoMultiCore)]
-pub struct AndExpr {
-    lhs: Box<dyn Boolean>,
-    rhs: Box<dyn Boolean>,
+pub struct And {
+    lhs: Box<dyn Expression>, // Boolean
+    rhs: Box<dyn Expression>, // Boolean
 }
 
-impl AndExpr {
-    pub fn new(lhs: Box<dyn Boolean>, rhs: Box<dyn Boolean>) -> Self {
+impl And {
+    pub fn new(lhs: Box<dyn Expression>, rhs: Box<dyn Expression>) -> Self {
         Self { lhs, rhs }
     }
 }
 
-impl Expression for AndExpr {
-    fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_> {
-        debug_assert!(matches!(coerce, ExprType::Any | ExprType::Bool));
+impl Client for And {
+    type Ctx = ExprType;
+    type Msg = Message;
 
-        let conds = [&self.lhs, &self.rhs]
-            .into_iter()
-            .flat_map(|e| e.conditions(ExprType::Bool));
-        Box::new(conds)
+    fn children(
+        &self,
+        ctx: Self::Ctx,
+    ) -> Vec<(&dyn Client<Ctx = Self::Ctx, Msg = Self::Msg>, Self::Ctx)> {
+        vec![
+            (self.lhs.as_ref(), ExprType::Bool),
+            (self.rhs.as_ref(), ExprType::Bool),
+        ]
+    }
+
+    fn messages(&self, ctx: Self::Ctx) -> Vec<Self::Msg> {
+        debug_assert!(matches!(ctx, ExprType::Any | ExprType::Bool));
+        Vec::new()
+    }
+}
+impl Checkable for And {}
+impl Expression for And {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
     }
 
     fn display(&self, dialect: Dialect) -> String {
@@ -30,23 +44,5 @@ impl Expression for AndExpr {
         )
     }
 }
-impl CoreExpression for AndExpr {}
-impl Boolean for AndExpr {}
-super::impl_bool_logic!(AndExpr);
-
-pub trait And<R> {
-    fn and(self, rhs: R) -> AndExpr;
-}
-
-impl<L, R> And<R> for L
-where
-    L: Boolean + 'static,
-    R: Boolean + 'static,
-{
-    fn and(self, rhs: R) -> AndExpr {
-        AndExpr {
-            lhs: Box::new(self),
-            rhs: Box::new(rhs),
-        }
-    }
-}
+impl Common for And {}
+impl Boolean for And {}

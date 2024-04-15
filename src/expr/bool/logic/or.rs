@@ -1,25 +1,39 @@
 use crate::expr::prelude::*;
 
-#[derive(IntoMultiCore)]
-pub struct OrExpr {
-    lhs: Box<dyn Boolean>,
-    rhs: Box<dyn Boolean>,
+pub struct Or {
+    lhs: Box<dyn Expression>, // Boolean
+    rhs: Box<dyn Expression>, // Boolean
 }
 
-impl OrExpr {
-    pub fn new(lhs: Box<dyn Boolean>, rhs: Box<dyn Boolean>) -> Self {
+impl Or {
+    pub fn new(lhs: Box<dyn Expression>, rhs: Box<dyn Expression>) -> Self {
         Self { lhs, rhs }
     }
 }
 
-impl Expression for OrExpr {
-    fn conditions(&self, coerce: ExprType) -> Box<dyn Iterator<Item = Condition> + '_> {
-        debug_assert!(matches!(coerce, ExprType::Any | ExprType::Bool));
+impl Client for Or {
+    type Ctx = ExprType;
+    type Msg = Message;
 
-        let conds = [&self.lhs, &self.rhs]
-            .into_iter()
-            .flat_map(|e| e.conditions(ExprType::Bool));
-        Box::new(conds)
+    fn children(
+        &self,
+        ctx: Self::Ctx,
+    ) -> Vec<(&dyn Client<Ctx = Self::Ctx, Msg = Self::Msg>, Self::Ctx)> {
+        debug_assert!(matches!(ctx, ExprType::Any | ExprType::Bool));
+        vec![
+            (self.lhs.as_ref(), ExprType::Bool),
+            (self.rhs.as_ref(), ExprType::Bool),
+        ]
+    }
+
+    fn messages(&self, ctx: Self::Ctx) -> Vec<Self::Msg> {
+        Vec::new()
+    }
+}
+impl Checkable for Or {}
+impl Expression for Or {
+    fn eval_type(&self) -> ExprType {
+        ExprType::Bool
     }
 
     fn display(&self, dialect: Dialect) -> String {
@@ -30,23 +44,5 @@ impl Expression for OrExpr {
         )
     }
 }
-impl CoreExpression for OrExpr {}
-impl Boolean for OrExpr {}
-super::impl_bool_logic!(OrExpr);
-
-pub trait Or<R> {
-    fn or(self, rhs: R) -> OrExpr;
-}
-
-impl<L, R> Or<R> for L
-where
-    L: Boolean + 'static,
-    R: Boolean + 'static,
-{
-    fn or(self, rhs: R) -> OrExpr {
-        OrExpr {
-            lhs: Box::new(self),
-            rhs: Box::new(rhs),
-        }
-    }
-}
+impl Common for Or {}
+impl Boolean for Or {}
